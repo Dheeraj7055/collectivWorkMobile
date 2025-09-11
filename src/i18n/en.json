@@ -1,0 +1,17 @@
+{
+    "auth": {
+      "login": "Login",
+      "logout": "Logout",
+      "email": "Email Address",
+      "password": "Password",
+      "welcomeBack": "Welcome Back",
+      "signInToContinue": "Sign in to your account to continue"
+    },
+    "common": {
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "cancel": "Cancel",
+      "ok": "OK"
+    }
+  }
