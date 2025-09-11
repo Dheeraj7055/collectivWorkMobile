@@ -3,11 +3,12 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import Video from "react-native-video";
 import ImageViewing from "react-native-image-viewing";
 import moment from "moment";
+import { styles } from "@/styles/postCardStyles";
 
 export interface MediaItem {
   id: string | number;
   name: string;
-  type: string; // "image/png", "video/mp4", etc.
+  type: string; // "image/png", "video/mp4", "image/gif", "image/svg+xml"
   url: string;
 }
 
@@ -51,15 +52,11 @@ export const PostCard: React.FC<PostProps> = ({
     setViewerVisible(true);
   };
 
-  const renderMedia = (item: MediaItem, index: number, className: string) => {
+  const renderMedia = (item: MediaItem, style: any, index: number) => {
     if (item.type.startsWith("image/")) {
       return (
         <TouchableOpacity key={item.id} onPress={() => openViewer(index)}>
-          <Image
-            source={{ uri: item.url }}
-            className={`${className} rounded-lg`}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: item.url }} style={style} resizeMode="cover" />
         </TouchableOpacity>
       );
     }
@@ -69,12 +66,12 @@ export const PostCard: React.FC<PostProps> = ({
         <TouchableOpacity key={item.id} onPress={() => openViewer(index)}>
           <Video
             source={{ uri: item.url }}
-            className={`${className} rounded-lg`}
+            style={style}
             resizeMode="cover"
             paused={true}
           />
-          <View className="absolute inset-0 items-center justify-center bg-black/30 rounded-lg">
-            <Text className="text-white text-2xl font-bold">▶</Text>
+          <View style={styles.videoOverlay}>
+            <Text style={styles.playIcon}>▶</Text>
           </View>
         </TouchableOpacity>
       );
@@ -86,13 +83,13 @@ export const PostCard: React.FC<PostProps> = ({
   const renderImageGrid = () => {
     if (!images || images.length === 0) return null;
 
-    // Video first
+    // Handle video first
     if (images[0].type.startsWith("video/")) {
       return (
-        <View className="mt-2">
+        <View style={styles.singleWrapper}>
           <Video
             source={{ uri: images[0].url }}
-            className="w-full h-52 rounded-lg"
+            style={styles.singleImage}
             controls
             resizeMode="cover"
           />
@@ -102,16 +99,26 @@ export const PostCard: React.FC<PostProps> = ({
 
     // 1 image
     if (images.length === 1) {
-      return renderMedia(images[0], 0, "w-full h-52 mt-2");
+      return (
+        <TouchableOpacity onPress={() => openViewer(0)}>
+          <Image source={{ uri: images[0].url }} style={styles.singleImage} />
+        </TouchableOpacity>
+      );
     }
 
     // 2 images
     if (images.length === 2) {
       return (
-        <View className="flex-row mt-2 space-x-1">
-          {images.map((img, idx) =>
-            renderMedia(img, idx, "w-1/2 h-52")
-          )}
+        <View style={styles.row}>
+          {images.map((img, idx) => (
+            <TouchableOpacity
+              key={img.id}
+              onPress={() => openViewer(idx)}
+              style={{ flex: 1, marginHorizontal: 2 }}
+            >
+              <Image source={{ uri: img.url }} style={styles.halfImage} />
+            </TouchableOpacity>
+          ))}
         </View>
       );
     }
@@ -119,11 +126,20 @@ export const PostCard: React.FC<PostProps> = ({
     // 3 images
     if (images.length === 3) {
       return (
-        <View className="flex-row mt-2 space-x-1">
-          {renderMedia(images[0], 0, "w-1/2 h-52")}
-          <View className="w-1/2 justify-between space-y-1">
-            {renderMedia(images[1], 1, "w-full h-24")}
-            {renderMedia(images[2], 2, "w-full h-24")}
+        <View style={styles.row}>
+          <TouchableOpacity
+            onPress={() => openViewer(0)}
+            style={{ flex: 1, marginRight: 2 }}
+          >
+            <Image source={{ uri: images[0].url }} style={styles.leftLarge} />
+          </TouchableOpacity>
+          <View style={styles.rightColumn}>
+            <TouchableOpacity onPress={() => openViewer(1)}>
+              <Image source={{ uri: images[1].url }} style={styles.quarterImage} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => openViewer(2)}>
+              <Image source={{ uri: images[2].url }} style={styles.quarterImage} />
+            </TouchableOpacity>
           </View>
         </View>
       );
@@ -132,22 +148,24 @@ export const PostCard: React.FC<PostProps> = ({
     // 4+ images
     if (images.length > 3) {
       return (
-        <View className="flex-row mt-2 space-x-1">
-          {renderMedia(images[0], 0, "w-1/2 h-52")}
-          <View className="w-1/2 justify-between space-y-1">
-            {renderMedia(images[1], 1, "w-full h-24")}
+        <View style={styles.row}>
+          <TouchableOpacity
+            onPress={() => openViewer(0)}
+            style={{ flex: 1, marginRight: 2 }}
+          >
+            <Image source={{ uri: images[0].url }} style={styles.leftLarge} />
+          </TouchableOpacity>
+          <View style={styles.rightColumn}>
+            <TouchableOpacity onPress={() => openViewer(1)}>
+              <Image source={{ uri: images[1].url }} style={styles.quarterImage} />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => openViewer(2)}
-              className="relative w-full h-24"
+              style={styles.moreContainer}
             >
-              <Image
-                source={{ uri: images[2].url }}
-                className="w-full h-full rounded-lg"
-              />
-              <View className="absolute inset-0 bg-black/50 rounded-lg items-center justify-center">
-                <Text className="text-white font-bold text-lg">
-                  +{images.length - 3}
-                </Text>
+              <Image source={{ uri: images[2].url }} style={styles.quarterImage} />
+              <View style={styles.overlay}>
+                <Text style={styles.moreText}>+{images.length - 3}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -157,43 +175,33 @@ export const PostCard: React.FC<PostProps> = ({
   };
 
   return (
-    <View
-      key={id}
-      className="bg-white rounded-lg p-3 m-3 shadow-sm"
-    >
+    <View key={id} style={styles.card}>
       {/* Header */}
-      <View className="flex-row items-center mb-2">
+      <View style={styles.header}>
         {profileImage ? (
-          <Image
-            source={{ uri: profileImage }}
-            className="w-10 h-10 rounded-full mr-2"
-          />
+          <Image source={{ uri: profileImage }} style={styles.avatar} />
         ) : (
-          <View
-            className="w-10 h-10 rounded-full mr-2 items-center justify-center"
-            style={{ backgroundColor: profileColor }}
-          >
-            <Text className="text-white font-bold text-sm">
-              {getInitials(name)}
-            </Text>
+          <View style={[styles.avatar, { backgroundColor: profileColor }]}>
+            <Text style={styles.avatarText}>{getInitials(name)}</Text>
           </View>
         )}
-        <View className="flex-1">
-          <Text className="font-bold text-sm">{name}</Text>
-          <Text className="text-xs text-gray-500">
+        <View style={styles.headerText}>
+          <Text style={styles.name}>{name}</Text>
+          <Text style={styles.date}>
             {moment(date).format("DD MMM YYYY | hh:mm A")}
           </Text>
         </View>
-        <Text className="text-lg text-gray-400">⋮</Text>
+        <Text style={styles.menu}>⋮</Text>
       </View>
 
       {/* Title + Content */}
-      <Text className="text-sm font-semibold text-blue-600 mb-1">{title}</Text>
-      <Text className="text-xs text-gray-700 mb-2">{content}</Text>
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.content}>{content}</Text>
 
       {/* Media Grid */}
       {renderImageGrid()}
 
+      {/* Image Viewer */}
       <ImageViewing
         images={images
           .filter((m) => m.type.startsWith("image/"))
@@ -204,24 +212,24 @@ export const PostCard: React.FC<PostProps> = ({
       />
 
       {/* Footer */}
-      <View className="flex-row justify-between mt-2 mb-1">
-        <Text className="text-xs text-gray-500">👍 {likes} Likes</Text>
-        <Text className="text-xs text-gray-500">{comments} Comments</Text>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>👍 {likes} Likes</Text>
+        <Text style={styles.footerText}>{comments} Comments</Text>
       </View>
 
       {/* Actions */}
-      <View className="flex-row justify-around border-t border-gray-200 pt-2">
+      <View style={styles.actions}>
         <TouchableOpacity>
-          <Text className="font-semibold text-xs text-gray-600">Like</Text>
+          <Text style={styles.actionText}>Like</Text>
         </TouchableOpacity>
         <TouchableOpacity>
-          <Text className="font-semibold text-xs text-gray-600">Comment</Text>
+          <Text style={styles.actionText}>Comment</Text>
         </TouchableOpacity>
         <TouchableOpacity>
-          <Text className="font-semibold text-xs text-gray-600">Repost</Text>
+          <Text style={styles.actionText}>Repost</Text>
         </TouchableOpacity>
         <TouchableOpacity>
-          <Text className="font-semibold text-xs text-gray-600">Send</Text>
+          <Text style={styles.actionText}>Send</Text>
         </TouchableOpacity>
       </View>
     </View>

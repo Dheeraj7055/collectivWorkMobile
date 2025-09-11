@@ -5,7 +5,7 @@ import { PaperProvider } from 'react-native-paper';
 import { store } from './src/redux/store';
 import { RootNavigator } from './src/navigation';
 import { lightTheme } from './src/themes/colors';
-import "./tailwind.css";
+// import "./tailwind.css";
 
 const App: React.FC = () => {
   return (
