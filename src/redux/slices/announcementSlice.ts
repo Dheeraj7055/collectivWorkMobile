@@ -48,7 +48,7 @@ Record<string, any> | undefined,
   try {
     const encodedPayload = payload ? encodeData(payload) : null;
     const response = await announcementService.getAll(
-      encodedPayload ? { payload: encodedPayload } : undefined
+      encodedPayload ? { payload: encodedPayload } : {}
     );
     return response.data;
   } catch (error: any) {

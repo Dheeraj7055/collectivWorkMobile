@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Android (Small_Phone)",
+      "request": "launch",
+      "type": "reactnative",
+      "platform": "android",
+      "target": "Small_Phone",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

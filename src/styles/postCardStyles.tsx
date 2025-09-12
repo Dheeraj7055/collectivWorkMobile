@@ -60,39 +60,39 @@ export const styles = StyleSheet.create({
   // Image grid
   singleImage: {
     width: '100%',
-    height: 200,
+    height: 250, // bigger like LinkedIn
     borderRadius: 8,
   },
   row: {
     flexDirection: 'row',
     marginTop: 6,
+    overflow: 'hidden', // ✅ prevent image overflow
   },
   halfImage: {
-    width: '50%',
-    height: 200,
+    flex: 1, // ✅ no width: '50%'
+    height: 250,
     borderRadius: 8,
   },
   leftLarge: {
-    width: '50%',
-    height: 200,
+    flex: 1, // ✅ fill left side
+    height: 250,
     borderRadius: 8,
     marginRight: 2,
   },
   rightColumn: {
-    width: '50%',
+    flex: 1, // ✅ fill right side
     justifyContent: 'space-between',
   },
   quarterImage: {
     width: '100%',
-    height: 98,
+    height: 122, // ✅ 250/2 - spacing
     borderRadius: 8,
     marginBottom: 2,
   },
-
   moreContainer: {
     position: 'relative',
     width: '100%',
-    height: 98,
+    height: 122,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
   moreText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 20,
   },
 
   footer: {
@@ -122,12 +122,33 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-around',
     borderTopWidth: 0.5,
     borderTopColor: '#ddd',
-    paddingTop: 6,
+    paddingVertical: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   actionText: {
-    fontWeight: '600',
+    marginLeft: 6,
     fontSize: 13,
+    fontWeight: '500',
     color: '#555',
+  },
+  reactionPicker: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  reactionIcon: {
+    marginHorizontal: 4,
   },
   videoOverlay: {
     ...StyleSheet.absoluteFillObject,
