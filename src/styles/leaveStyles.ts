@@ -59,13 +59,13 @@ progressValue: {
   color: "#000",
 },
 
-meta: {
+metaText: {
   fontSize: 13,
   color: "#666",
   marginTop: 4,
 },
 
-bold: {
+boldText: {
   fontWeight: "600",
 },
 
