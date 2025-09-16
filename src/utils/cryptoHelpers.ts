@@ -15,11 +15,18 @@ export const encodeData = (payload: unknown): string => {
 
 export const decodeData = <T = any>(token: string): T | null => {
   try {
-    if (!token) throw new Error('No token provided to decode');
-    const decoded = Base64.decode(token);
-    return JSON.parse(decodeURI(decoded)) as T;
+    if (!token) throw new Error('No token provided');
+
+    // JWT is in format header.payload.signature
+    const parts = token.split('.');
+    if (parts.length < 2) throw new Error('Invalid JWT format');
+
+    const payloadBase64 = parts[1]; // payload
+    const decoded = Base64.decode(payloadBase64); // decode base64 → string
+
+    return JSON.parse(decoded) as T;
   } catch (error) {
-    console.error('decodeData error:', error);
+    console.error('decodeJWT error:', error);
     return null;
   }
 };

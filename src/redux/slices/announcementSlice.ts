@@ -2,13 +2,13 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { announcementService } from "@/services/announcementService";
 import { encodeData } from "@/utils/cryptoHelpers";
-import { MediaItem } from "@/components/PostCard";
+import { MediaItem } from "@/types/announcement";
 
 export interface Announcement {
   id: string | number;
-  subject: string;                // ✅ maps to API "subject"
+  subject: string;               
   description: string;
-  created_at: string;             // ✅ API uses snake_case
+  created_at: string;             
   createdByUser?: {
     id: string | number;
     first_name: string;
@@ -19,10 +19,10 @@ export interface Announcement {
     cover_image_url?: string | null;
     employeeID?: string;
   };
-  document_urls?: MediaItem[];        // ✅ attachments / images
+  document_urls?: MediaItem[];     
   total_likes?: number;
   total_comments?: number;
-  isLiked?: boolean;              // ✅ API sends this
+  isLiked?: boolean;           
   status?: string;
   type?: string;
 }

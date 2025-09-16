@@ -4,12 +4,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, Image, View } from 'react-native';
 import { PostScreen } from '@/screens/PostScreen';
+import { LeaveScreen } from '@/screens/LeaveScreen';
 
 // Placeholder screens
 
 const ChatScreen = () => <Text>Chat Screen</Text>;
 const AttendanceScreen = () => <Text>Attendance Screen</Text>;
-const LeaveScreen = () => <Text>Leave Screen</Text>;
+// const LeaveScreen = () => <Text>Leave Screen</Text>;
 const ProfileScreen = () => <Text>Profile Screen</Text>;
 
 export type MainTabParamList = {

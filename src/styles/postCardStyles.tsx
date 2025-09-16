@@ -119,7 +119,7 @@ export const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     borderTopWidth: 0.5,
     borderTopColor: '#ddd',
     paddingVertical: 8,

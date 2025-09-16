@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -18,42 +18,18 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchAnnouncements } from "@/redux/slices/announcementSlice";
 import { AppDispatch, RootState } from "@/redux/store";
 import { encodeData } from "@/utils/cryptoHelpers";
+import { fetchUserData } from "@/redux/slices/userSlice";
+import { Announcement, MediaItem } from "@/types/announcement";
+import { ThumbsUp } from "lucide-react-native";
 
 const { width, height } = Dimensions.get("window");
 
-export interface MediaItem {
-  id: string | number;
-  name: string;
-  type: string; // "image/png", "video/mp4", "image/gif", "image/svg+xml"
-  url: string;
-}
-
-export interface PostProps {
-  announcement: any,
-  id: string | number;
-  name: string;
-  date: string;
-  title: string;
-  content: string;
-  images?: MediaItem[];
-  likes?: number;
-  comments?: number;
-  profileImage?: string | null;
-  profileColor?: string,
+interface PostProps {
+  announcement: Announcement;
 }
 
 export const PostCard: React.FC<PostProps> = ({
-  announcement,
-  id,
-  name,
-  date,
-  title,
-  content,
-  images = [],
-  likes = 0,
-  comments = 0,
-  profileImage,
-  profileColor = "#999",
+  announcement
 }) => {
   const [isViewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -65,6 +41,19 @@ export const PostCard: React.FC<PostProps> = ({
   const dispatch = useDispatch<AppDispatch>();
    const userData = useSelector((state: RootState) => state.user.profile);
 
+   const id = announcement.id;
+  const name = `${announcement.createdByUser?.first_name || ""} ${
+    announcement.createdByUser?.last_name || ""
+  }`.trim();
+  const date = announcement.created_at;
+  const title = announcement.subject;
+  const content = announcement.description;
+  const images = announcement.document_urls || [];
+  const likes = announcement.total_likes;
+  const comments = announcement.total_comments;
+  const profileImage = announcement.createdByUser?.image_url;
+  const profileColor = announcement.createdByUser?.profile_color || "#999";
+  
   const reactions = [
     {
       name: "Like",
@@ -110,6 +99,12 @@ export const PostCard: React.FC<PostProps> = ({
     },
   ];
 
+  const totalReactions =
+  Object.values(announcement.reactions_count || {}).reduce(
+    (total, count) => total + (count as number),
+    0
+  );
+
   const handleReactionSelect = async (reaction: string) => {
   try {
     setSelectedReaction(reaction);
@@ -123,7 +118,7 @@ export const PostCard: React.FC<PostProps> = ({
 
     const response = await apiClient.post(
       API_ROUTES.ANNOUNCEMENT_LIKE,
-      { payload: encodedPayload }   // ✅ send with "payload" key
+      { payload: encodedPayload }
     );
 
     if (response?.success) {
@@ -136,47 +131,22 @@ export const PostCard: React.FC<PostProps> = ({
   }
 };
 
-// const handleLikeToggle = async () => {
-//   try {
-//     if (selectedReaction) {
-//       // remove like
-//       const payload = { announcement_id: id };
-//       const encodedPayload = encodeData(payload);
-
-//       const response = await apiClient.post(
-//         API_ROUTES.ANNOUNCEMENT_REMOVE_LIKE,
-//         { payload: encodedPayload }
-//       );
-
-//       if (response?.success) {
-//         setSelectedReaction(null);
-//         dispatch(fetchAnnouncements({ postName: "all", searchParam: "" }));
-//       }
-//     } else {
-//       // default like
-//       await handleReactionSelect("Like");
-//     }
-//   } catch (err: any) {
-//     console.error("Error toggling like:", err.response?.data || err.message);
-//   }
-// };
-
 const handleLikeToggle = async () => {
   try {
     if (selectedReaction) {
       // Find the reaction entry for this user
-      // const userLike = announcement?.AnnouncementLikes?.find(
-      //   (item) => item.liked_by === userData?.id
-      // );
+      const userLike = announcement?.AnnouncementLikes?.find(
+        (item) => item.liked_by === userData?.id
+      );
 
-      // if (!userLike) {
-      //   console.warn("No like record found for this user");
-      //   return;
-      // }
+      if (!userLike) {
+        console.warn("No like record found for this user");
+        return;
+      }
 
       // remove like payload with both fields
       const payload = {
-        // id: userLike.id,
+        id: userLike.id,
         announcement_id: id,
       };
       const encodedPayload = encodeData(payload);
@@ -313,6 +283,23 @@ const handleLikeToggle = async () => {
     }
   };
 
+  useEffect(() => {
+      dispatch(fetchUserData());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (announcement?.AnnouncementLikes && userData?.id) {
+      const userLike = announcement.AnnouncementLikes.find(
+        item => item.liked_by === userData.id,
+      );
+      if (userLike) {
+        setSelectedReaction(userLike.reaction_name);
+      } else {
+        setSelectedReaction(null);
+      }
+    }
+  }, [announcement?.AnnouncementLikes, userData?.id]);
+
   return (
     <View key={id} style={styles.card}>
       {/* Header */}
@@ -327,7 +314,7 @@ const handleLikeToggle = async () => {
         <View style={styles.headerText}>
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.date}>
-            {moment(date).format("DD MMM YYYY | hh:mm A")}
+            {moment(date).format('DD MMM YYYY | hh:mm A')}
           </Text>
         </View>
         <Text style={styles.menu}>⋮</Text>
@@ -342,7 +329,7 @@ const handleLikeToggle = async () => {
 
       {/* Image Viewer */}
       <ImageViewing
-        images={bitmapImages.map((img) => ({ uri: img?.url }))}
+        images={bitmapImages.map(img => ({ uri: img?.url }))}
         imageIndex={viewerIndex}
         visible={isViewerVisible}
         onRequestClose={() => setViewerVisible(false)}
@@ -357,9 +344,9 @@ const handleLikeToggle = async () => {
         <View
           style={{
             flex: 1,
-            backgroundColor: "black",
-            justifyContent: "center",
-            alignItems: "center",
+            backgroundColor: 'black',
+            justifyContent: 'center',
+            alignItems: 'center',
           }}
         >
           <SvgUri
@@ -368,24 +355,83 @@ const handleLikeToggle = async () => {
             height={height * 0.7}
           />
           <TouchableOpacity
-            style={{ position: "absolute", top: 40, right: 20 }}
+            style={{ position: 'absolute', top: 40, right: 20 }}
             onPress={() => setSvgViewerVisible(false)}
           >
-            <Text style={{ color: "white", fontSize: 20 }}>✕</Text>
+            <Text style={{ color: 'white', fontSize: 20 }}>✕</Text>
           </TouchableOpacity>
         </View>
       </Modal>
 
       {/* Footer */}
-      <View style={styles.footer}>
+      {/* <View style={styles.footer}>
         <Text style={styles.footerText}>👍 {likes} Likes</Text>
         <Text style={styles.footerText}>{comments} Comments</Text>
+      </View> */}
+
+      <View style={styles.footer}>
+        {/* Reaction icons */}
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 3 }}>
+            {Object.entries(announcement.reactions_count || {})
+              .slice(0, 3)
+              .map(([emoji, count], index) => {
+                const reaction = reactions.find(r => r.name === emoji);
+
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      { marginLeft: index === 0 ? 0 : -8, zIndex: 3 + index },
+                      styles.reactionIcon,
+                    ]}
+                  >
+                    {reaction?.emoji ? (
+                      <SvgUri uri={reaction.emoji} width={18} height={18} />
+                    ) : (
+                      <SvgUri
+                        uri="https://hr-screening.s3.ap-south-1.amazonaws.com/test%20open%20files%20upload/likedIcon.svg_1740128322035"
+                        width={18}
+                        height={18}
+                      />
+                    )}
+                  </View>
+                );
+              })}
+          </View>
+          <View>
+            {totalReactions > 0 && (
+              <Text style={styles.footerText}>
+                {announcement?.AnnouncementLikes?.find(
+                  item => item.liked_by === userData?.id,
+                )
+                  ? 'You'
+                  : announcement?.AnnouncementLikes?.[0]?.User?.first_name ||
+                    'Someone'}
+
+                {totalReactions === 1
+                  ? ''
+                  : ` and ${totalReactions - 1} ${
+                      totalReactions - 1 === 1 ? 'other' : 'others'
+                    }`}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* Reaction summary text */}
+
+        {/* Comments count */}
+        <Text style={[styles.footerText, { marginLeft: 10 }]}>
+          {comments} Comments
+        </Text>
       </View>
 
       {/* Actions */}
       <View style={styles.actions}>
-        {/* Like Button */}
-        <View style={{ alignItems: "center" }}>
+        <View style={{ alignItems: 'center' }}>
           <TouchableOpacity
             onPress={handleLikeToggle}
             onLongPress={() => setShowReactions(true)}
@@ -395,14 +441,14 @@ const handleLikeToggle = async () => {
             {selectedReaction ? (
               <SvgUri
                 uri={
-                  reactions.find((r) => r.name === selectedReaction)?.emoji || ""
+                  reactions.find(r => r.name === selectedReaction)?.emoji || ''
                 }
                 width={20}
                 height={20}
-                style={{ marginRight: 6 }}
+                style={{ marginRight: 2 }}
               />
             ) : (
-              <Text style={{ marginRight: 6 }} />
+              <Text style={{ marginRight: 2 }} />
             )}
             <Text
               style={[
@@ -410,19 +456,24 @@ const handleLikeToggle = async () => {
                 selectedReaction
                   ? {
                       color:
-                        reactions.find((r) => r.name === selectedReaction)
-                          ?.emojiFont || "#555",
+                        reactions.find(r => r.name === selectedReaction)
+                          ?.emojiFont || '#555',
                     }
                   : {},
               ]}
             >
-              {selectedReaction || "Like"}
+              {selectedReaction || (
+                <View style={{ flexDirection: 'row', gap: '6' }}>
+                  <ThumbsUp size="18" color="black"></ThumbsUp>
+                  <Text>Like</Text>
+                </View>
+              )}
             </Text>
           </TouchableOpacity>
 
           {showReactions && (
             <View style={styles.reactionPicker}>
-              {reactions.map((reaction) => (
+              {reactions.map(reaction => (
                 <TouchableOpacity
                   key={reaction.code}
                   onPress={() => handleReactionSelect(reaction.name)}

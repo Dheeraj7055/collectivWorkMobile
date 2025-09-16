@@ -20,12 +20,15 @@ import { Dropdown } from "react-native-element-dropdown";
 import { Search, Filter, Plus, CheckSquare, Square, ClipboardList, Volume2, Image as ImageIcon, Clock4, Upload } from "lucide-react-native";
 import {launchImageLibrary} from 'react-native-image-picker';
 import { Image } from "react-native"; 
+import { fetchUserNamesList } from "@/redux/slices/userSlice";
 
 export const PostScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { records, isLoading, error } = useSelector(
     (state: RootState) => state.announcements
   );
+  const { names } = useSelector((state: RootState) => state.user);
+  console.log('names', names)
 
   // Step 1 modal (Post type)
   const [modalVisible, setModalVisible] = useState(false);
@@ -154,6 +157,11 @@ const permissionOptions = [
     });
   };
 
+  const openPostCreationModal = () => {
+    setModalVisible(true);
+    dispatch(fetchUserNamesList({}));
+  }
+
   return (
     <SafeAreaView
       style={{ flex: 1, backgroundColor: '#f2f2f2' }}
@@ -178,7 +186,7 @@ const permissionOptions = [
 
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => setModalVisible(true)}
+          onPress={() => openPostCreationModal()}
         >
           <Plus size={20} color="#fff" />
         </TouchableOpacity>
@@ -528,19 +536,6 @@ const permissionOptions = [
             </Text>
 
             {/* Upload box */}
-            {/* <TouchableOpacity
-              style={styles.uploadBox}
-              onPress={handleImageUpload}
-            >
-              <Upload size={28} color="#888" />
-              <Text style={styles.uploadText}>
-                <Text style={styles.uploadLink}>Click to upload</Text> or drag
-                and drop
-              </Text>
-              <Text style={styles.uploadHint}>
-                SVG, PNG, JPG or GIF (max. 800×400px)
-              </Text>
-            </TouchableOpacity> */}
             <TouchableOpacity
               style={styles.uploadBox}
               onPress={handleImageUpload}
@@ -594,21 +589,7 @@ const permissionOptions = [
         data={records}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => (
-          <PostCard
-            announcement={item}
-            id={item.id}
-            name={`${item.createdByUser?.first_name || ''} ${
-              item.createdByUser?.last_name || ''
-            }`}
-            date={item.created_at}
-            title={item.subject}
-            content={item.description}
-            images={item.document_urls || []}
-            likes={item.total_likes}
-            comments={item.total_comments}
-            profileImage={item.createdByUser?.image_url}
-            profileColor={item.createdByUser?.profile_color}
-          />
+          <PostCard announcement={item} />
         )}
       />
     </SafeAreaView>
