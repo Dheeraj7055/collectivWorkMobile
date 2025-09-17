@@ -110,11 +110,9 @@ const AudienceDropdown: React.FC<AudienceDropdownProps> = ({
             }}
           >
             <CheckBox
-              // ✅ when selectAll is true, force these checked too
               value={selectAll || sectionSelection === item.value}
               onValueChange={() => {
                 if (selectAll) {
-                  // if "all" is active, ignore toggle on others
                   return;
                 }
                 setSectionSelection(

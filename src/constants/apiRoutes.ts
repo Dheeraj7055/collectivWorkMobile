@@ -9,6 +9,8 @@ export const API_ROUTES = {
   ANNOUNCEMENTS: "/api/announcement/list",
   ANNOUNCEMENT_LIKE: "/api/announcement/like",
   ANNOUNCEMENT_REMOVE_LIKE: "/api/announcement/like/delete",
+  UPDATE_ANNOUNCEMENT: "/api/announcement",
+  CREATE_ANNOUNCEMENT: "/api/announcement",
 
   //other
   ATTENDANCE: "/api/attendance/list",

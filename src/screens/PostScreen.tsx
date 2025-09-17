@@ -9,6 +9,7 @@ import {
   ScrollView,
   Image,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PostCard } from '@/components/PostCard';
@@ -37,6 +38,9 @@ import { fetchUserNamesList } from '@/redux/slices/userSlice';
 import { fetchDepartmentNames } from '@/redux/slices/departmentSlice';
 import AudienceDropdown from '@/components/AudienceDropdown';
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { apiClient } from '@/services/api';
+import { API_ROUTES } from '@/constants/apiRoutes';
+import { encodeData } from '@/utils/cryptoHelpers';
 
 
 // --- TYPES ---
@@ -52,6 +56,7 @@ interface AudienceData {
 
 export const PostScreen = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const userData = useSelector((state: RootState) => state.user.profile);
   const { records, isLoading, error } = useSelector(
     (state: RootState) => state.announcements,
   );
@@ -91,13 +96,14 @@ export const PostScreen = () => {
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [selectedDate, setSelectedDate] = useState(new Date()); // default today
   const [showPicker, setShowPicker] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
 
   const changePostDate = (event: DateTimePickerEvent, date?: Date) => {
-  setShowPicker(false);
-  if (date) {
-    setSelectedDate(date);
-  }
-};
+    setShowPicker(false);
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
 
   const handleOptionChange = (text: string, index: number) => {
     const updatedOptions = [...pollOptions];
@@ -250,10 +256,129 @@ export const PostScreen = () => {
     dispatch(fetchUserNamesList({}));
     dispatch(fetchDepartmentNames({}));
   };
-  
+
   const removeOption = (index: number) => {
-  const updatedOptions = pollOptions.filter((_, i) => i !== index);
-  setPollOptions(updatedOptions);
+    const updatedOptions = pollOptions.filter((_, i) => i !== index);
+    setPollOptions(updatedOptions);
+  };
+
+  const mergeMentionedUsers = () => {
+    // ✅ merge individual IDs from state
+    const updatedIndividualsIds = Array.from(
+      new Set([...selectedAudience.individuals, ...selectedParent]),
+    );
+
+    // ✅ build departments object list (same as addAudience)
+    const mergedDepartments = departmentNames
+      .filter(d => selectedAudience.departments.includes(String(d.id)))
+      .map(d => ({
+        id: d.id,
+        name: d.label,
+        userList: d.userList || [],
+      }));
+
+    // ✅ build individuals object list
+    const mergedIndividuals = names
+      .filter(u => updatedIndividualsIds.includes(String(u.id)))
+      .map(u => ({
+        id: u.id,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        email: u.email,
+        image_url: u.image_url,
+        profile_color: u.profile_color,
+      }));
+
+    // ✅ final object for API payload
+    const updatedGeneralFormData = {
+      departments: mergedDepartments,
+      individuals: mergedIndividuals,
+    };
+
+    return { updatedIndividuals: mergedIndividuals, updatedGeneralFormData };
+  };
+
+const handleCreate = async () => {
+  try {
+    const { updatedIndividuals, updatedGeneralFormData } = mergeMentionedUsers();
+
+    // 🔹 Build payload
+    const payload = {
+      announcement_id: null,
+      select_audience: updatedGeneralFormData,
+      notification_level: selectAll ? "All" : "selection",
+      schedule_announcement: selectedDate.toISOString(),
+      subject: selectedOption === "Poll" ? null : subject,
+      // selected_users: updatedIndividuals,
+      type: selectedOption.toLowerCase(),
+      description: selectedOption === "Poll" ? null : description,
+      options: selectedOption === "Poll" ? pollOptions : null,
+      question: selectedOption === "Poll" ? question : null,
+      status: "Active",
+      praised_to: praiseTo || null,
+      post_configuration: {
+        likesEnabled: selectedPermissions.includes("likes"),
+        commentsEnabled: selectedPermissions.includes("comments"),
+        repostEnabled: selectedPermissions.includes("repost"),
+        shareEnabled: selectedPermissions.includes("share"),
+      },
+      created_by: userData?.id || null,
+    };
+
+
+    const encodedPayload = encodeData(payload);
+
+    const formData = new FormData();
+    formData.append("payload", encodedPayload);
+
+    if (selectedImage) {
+      formData.append("file", {
+        uri: selectedImage,
+        type: "image/jpeg",
+        name: "upload.jpg",
+      } as any);
+    }
+
+    // 🔹 API URL
+    const apiMethod = isEdit
+      ? API_ROUTES.UPDATE_ANNOUNCEMENT
+      : API_ROUTES.CREATE_ANNOUNCEMENT;
+
+    const response = await apiClient.post(apiMethod, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+
+    if (response?.success) {
+      dispatch(
+        fetchAnnouncements({
+          postName: "all",
+          searchParam: "",
+        })
+      );
+
+      // reset state
+      setSubject("");
+      setDescription("");
+      setPollOptions(["", ""]);
+      setSelectedAudience({ departments: [], individuals: [] });
+      setSelectedParent([]);
+      setPraiseTo(null);
+      setSelectAll(false);
+      setSelectedImage(null);
+      setPostModalVisible(false);
+    } else {
+      Alert.alert("Error", response?.message || "Failed to create announcement.");
+    }
+  } catch (err: any) {
+    console.error(
+      "❌ Error creating announcement:",
+      err.response?.data || err.message
+    );
+    Alert.alert("Error", "Something went wrong while creating the announcement.");
+  }
 };
 
 
@@ -538,7 +663,6 @@ export const PostScreen = () => {
 
           {selectedOption === 'Poll' && (
             <View>
-              {/* Question */}
               <Text style={styles.quesLabel}>Question</Text>
               <TextInput
                 style={styles.input}
@@ -550,12 +674,10 @@ export const PostScreen = () => {
               <Text style={[styles.quesLabel]}>Options</Text>
               {pollOptions.map((opt, idx) => (
                 <View key={idx} style={styles.optionRow}>
-                  {/* Number */}
                   <Text style={styles.optionNumber}>
                     {String(idx + 1).padStart(2, '0')}
                   </Text>
 
-                  {/* Input */}
                   <TextInput
                     style={[styles.optionsInput, { flex: 1, marginLeft: 8 }]}
                     placeholder="Enter"
@@ -563,7 +685,6 @@ export const PostScreen = () => {
                     onChangeText={text => handleOptionChange(text, idx)}
                   />
 
-                  {/* Trash Icon (only if > 2 options) */}
                   {pollOptions.length > 2 && (
                     <TouchableOpacity
                       style={{ marginLeft: 3 }}
@@ -627,7 +748,9 @@ export const PostScreen = () => {
             ) : (
               ''
             )}
-            <Clock4 size="20" color="gray" />
+            <TouchableOpacity onPress={() => setShowPicker(true)}>
+              <Clock4 size={20} color="gray" />
+            </TouchableOpacity>
 
             {showPicker && (
               <DateTimePicker
@@ -642,12 +765,7 @@ export const PostScreen = () => {
           <TouchableOpacity
             style={styles.confirmButton}
             onPress={() => {
-              console.log('Post data:', {
-                subject,
-                description,
-                selectedPermissions,
-              });
-              setPostModalVisible(false);
+              handleCreate();
             }}
           >
             <Text style={styles.confirmText}>Confirm</Text>
