@@ -1,21 +1,18 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import {
-  loginUser,
-  logoutUser,
-  clearError,
-  restoreSessionFromStorage,
-} from '../redux/slices/authSlice';
+import { loginUser, logoutUser, clearError, restoreSessionFromStorage } from '../redux/slices/authSlice';
 import { LoginRequest } from '../types/user';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
-  const { user, isAuthenticated, isLoading, error } = useAppSelector(
-    (state) => state.auth
-  );
+  const { user, isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
 
   const login = async (credentials: LoginRequest) => {
-    await dispatch(loginUser(credentials)).unwrap();
+    try {
+      await dispatch(loginUser(credentials)).unwrap();
+    } catch (err) {
+      throw err;
+    }
   };
 
   const logout = async () => {

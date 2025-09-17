@@ -30,7 +30,7 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
   return null;
 });
 
-// 🔑 Restore session from AsyncStorage
+// 🔑 Restore session
 export const restoreSessionFromStorage = createAsyncThunk<
   LoginResponse | null,
   void,
@@ -70,10 +70,10 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.token = action.payload.token;
+        state.token = action.payload.token || null;
         state.refreshToken = action.payload.refreshToken || null;
         state.user = action.payload.user || null;
-        state.isAuthenticated = true;
+        state.isAuthenticated = !!action.payload.token;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -90,12 +90,12 @@ const authSlice = createSlice({
       })
 
       // Restore session
-      .addCase(restoreSessionFromStorage.pending, (state) => {
-        state.isLoading = true;
-      })
+      // .addCase(restoreSessionFromStorage.pending, (state) => {
+      //   state.isLoading = true;
+      // })
       .addCase(restoreSessionFromStorage.fulfilled, (state, action) => {
         state.isLoading = false;
-        if (action.payload) {
+        if (action.payload?.token) {
           state.token = action.payload.token;
           state.refreshToken = action.payload.refreshToken || null;
           state.user = action.payload.user || null;

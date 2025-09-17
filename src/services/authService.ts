@@ -1,46 +1,52 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from './api';
 import { encodeData } from '../utils/cryptoHelpers';
 import { LoginRequest, LoginResponse } from '../types/user';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const authService = {
+  // 🔑 Login
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const encodedPayload = encodeData(credentials);
     const response = await apiClient.post<any>('/api/users/login', { payload: encodedPayload });
+    const token = response.data.token || '';
+    const refreshToken = response.data.refreshToken || '';
 
-    const token = response.token;
-    const refreshToken = response.refreshToken;
+    if (token) {
+      await AsyncStorage.setItem('token', token);
+    } else {
+      await AsyncStorage.removeItem('token');
+    }
 
-    await AsyncStorage.setItem('token', token);
     if (refreshToken) {
       await AsyncStorage.setItem('refreshToken', refreshToken);
+    } else {
+      await AsyncStorage.removeItem('refreshToken');
     }
 
     return {
       token,
       refreshToken,
-      user: response.user || null,
+      user: response.user,
     };
   },
 
+  // 🔑 Logout
   logout: async (): Promise<void> => {
-    await apiClient.post('/auth/logout');
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('refreshToken');
   },
 
+  // 🔑 Restore session
   checkAuthStatus: async (): Promise<LoginResponse | null> => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return null;
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return null;
 
-      // Optionally call backend to verify token
-      return {
-        token,
-        refreshToken: (await AsyncStorage.getItem('refreshToken')) || null,
-      };
-    } catch {
-      return null;
-    }
+    const refreshToken = (await AsyncStorage.getItem('refreshToken')) || '';
+
+    return {
+      token,
+      refreshToken,
+      user: undefined, // no user API, keep it null
+    };
   },
 };
