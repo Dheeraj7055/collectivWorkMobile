@@ -5,11 +5,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, Image } from 'react-native';
 import { PostScreen } from '@/screens/PostScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { AttendanceScreen } from '@/screens/AttendanceScreen';
 import { LeaveScreen } from '@/screens/LeaveScreen';
 
 // Placeholder screens
 const ChatScreen = () => <Text>Chat Screen</Text>;
-const AttendanceScreen = () => <Text>Attendance Screen</Text>;
 
 export type MainTabParamList = {
   Post: undefined;
