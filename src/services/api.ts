@@ -3,14 +3,14 @@ import axios, {
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
-} from 'axios';
-import { API_BASE_URL } from '@env';
-import { store } from '@/redux/store';
+} from "axios";
+import { API_BASE_URL } from "@env";
+import { store } from "@/redux/store";
 
 const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: API_BASE_URL || "http://localhost:3000/api",
   timeout: 10000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { "Content-Type": "application/json" },
 });
 
 // Request Interceptor
@@ -19,16 +19,33 @@ api.interceptors.request.use(
     const state = store.getState();
     const token = state.auth.token;
     if (token) {
-      config.headers.set('Authorization', `${token}`);
+      config.headers.set("Authorization", `${token}`);
     }
-    config.headers.set('Content-Type', 'application/json');
 
-    console.log(
-      '[API REQUEST]',
-      config.method?.toUpperCase(),
-      `${config.baseURL}${config.url}`,
-      config.data ? `\nPayload: ${JSON.stringify(config.data)}` : ''
-    );
+    // Handle FormData vs JSON
+    if (config.data instanceof FormData) {
+      // Let Axios set correct `multipart/form-data` boundary
+      config.headers.delete?.("Content-Type"); // remove default
+      config.headers.set("Content-Type", "multipart/form-data");
+
+      // Debug FormData parts (React Native FormData has `_parts`)
+      const parts = (config.data as any)._parts || [];
+      console.log(
+        "[API REQUEST]",
+        config.method?.toUpperCase(),
+        `${config.baseURL}${config.url}`,
+        "\nFormData:",
+        parts.map((p: any) => `${p[0]}=${typeof p[1] === "object" ? JSON.stringify(p[1]) : p[1]}`)
+      );
+    } else {
+      config.headers.set("Content-Type", "application/json");
+      console.log(
+        "[API REQUEST]",
+        config.method?.toUpperCase(),
+        `${config.baseURL}${config.url}`,
+        config.data ? `\nPayload: ${JSON.stringify(config.data)}` : ""
+      );
+    }
 
     return config;
   },
@@ -39,23 +56,23 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response: AxiosResponse) => {
     console.log(
-      '[API RESPONSE]',
+      "[API RESPONSE]",
       response.config.url,
-      '\nStatus:', response.status,
-      '\nData:', JSON.stringify(response.data)
+      "\nStatus:", response.status,
+      "\nData:", JSON.stringify(response.data)
     );
     return response;
   },
   (error) => {
     if (error.response) {
       console.error(
-        '[API RESPONSE ERROR]',
-        'Status:', error.response.status,
-        'URL:', error.config?.url,
-        'Data:', JSON.stringify(error.response.data)
+        "[API RESPONSE ERROR]",
+        "Status:", error.response.status,
+        "URL:", error.config?.url,
+        "Data:", JSON.stringify(error.response.data)
       );
     } else {
-      console.error('[API NETWORK ERROR]', error.message);
+      console.error("[API NETWORK ERROR]", error.message);
     }
     return Promise.reject(error);
   }
