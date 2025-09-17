@@ -52,20 +52,19 @@ export const fetchUserNamesList = createAsyncThunk(
   async (payload: object = {}, { rejectWithValue }) => {
     try {
       const encodedPayload = encodeData(payload || {});
-
       const response = await apiClient.get("/api/users/names", {
         params: { payload: encodedPayload },
       });
 
-      if (response?.data && response.data.success && response.data.data) {
-        return response.data.data;
+      if (response?.data && response?.success) {
+        return response.data;
       } else {
         return rejectWithValue(
           response?.message || "Failed to fetch user names"
         );
       }
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err?.response?.data?.message || err.message);
     }
   }
 );

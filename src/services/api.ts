@@ -16,7 +16,6 @@ api.interceptors.request.use(
   (config: any) => {
     const state = store.getState();
     const token = state.auth.token;
-    debugger
 
     if (token) {
       config.headers.Authorization = `${token}`;
