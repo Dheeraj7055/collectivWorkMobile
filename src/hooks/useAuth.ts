@@ -1,27 +1,25 @@
-// src/hooks/useAuth.ts
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { loginUser, logoutUser, clearError } from '../redux/slices/authSlice';
+import {
+  loginUser,
+  logoutUser,
+  clearError,
+  restoreSessionFromStorage,
+} from '../redux/slices/authSlice';
 import { LoginRequest } from '../types/user';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
-  const { user, isAuthenticated, isLoading, error } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, isLoading, error } = useAppSelector(
+    (state) => state.auth
+  );
 
   const login = async (credentials: LoginRequest) => {
-    try {
-      await dispatch(loginUser(credentials)).unwrap();
-    } catch (error) {
-      throw error;
-    }
+    await dispatch(loginUser(credentials)).unwrap();
   };
 
   const logout = async () => {
-    try {
-      await dispatch(logoutUser()).unwrap();
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    await dispatch(logoutUser()).unwrap();
   };
 
   const clearAuthError = () => {
@@ -29,9 +27,8 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
-    // Check auth status on mount
-    // You can add auto-login logic here
-  }, []);
+    dispatch(restoreSessionFromStorage());
+  }, [dispatch]);
 
   return {
     user,

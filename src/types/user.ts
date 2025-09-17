@@ -27,6 +27,6 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  refreshToken: string;
+  refreshToken: string | null;
   user?: User;
 }

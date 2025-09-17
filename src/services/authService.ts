@@ -1,37 +1,44 @@
-// src/services/authService.ts
 import { apiClient } from './api';
 import { encodeData } from '../utils/cryptoHelpers';
 import { LoginRequest, LoginResponse } from '../types/user';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const encodedPayload = encodeData(credentials);
-    const response = await apiClient.post<any>('/api/users/login', {"payload": encodedPayload});
+    const response = await apiClient.post<any>('/api/users/login', { payload: encodedPayload });
+
+    const token = response.token;
+    const refreshToken = response.refreshToken;
+
+    await AsyncStorage.setItem('token', token);
+    if (refreshToken) {
+      await AsyncStorage.setItem('refreshToken', refreshToken);
+    }
+
     return {
-      token: response.data.token,
-      refreshToken: response.data.refreshToken,
+      token,
+      refreshToken,
+      user: response.user || null,
     };
   },
 
   logout: async (): Promise<void> => {
-    return await apiClient.post('/auth/logout');
-  },
-
-  register: async (userData: any): Promise<LoginResponse> => {
-    return await apiClient.post<LoginResponse>('/auth/register', userData);
-  },
-
-  forgotPassword: async (email: string): Promise<void> => {
-    return await apiClient.post('/auth/forgot-password', { email });
-  },
-
-  resetPassword: async (token: string, password: string): Promise<void> => {
-    return await apiClient.post('/auth/reset-password', { token, password });
+    await apiClient.post('/auth/logout');
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('refreshToken');
   },
 
   checkAuthStatus: async (): Promise<LoginResponse | null> => {
     try {
-      return await apiClient.get<LoginResponse>('/auth/me');
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return null;
+
+      // Optionally call backend to verify token
+      return {
+        token,
+        refreshToken: (await AsyncStorage.getItem('refreshToken')) || null,
+      };
     } catch {
       return null;
     }

@@ -11,46 +11,37 @@ const initialState: AuthState = {
   error: null,
 };
 
-// Async thunks
+// 🔑 Login
 export const loginUser = createAsyncThunk<
   LoginResponse,
   LoginRequest,
   { rejectValue: string }
->(
-  'api/users/login',
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const response = await authService.login(credentials);
-      return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Login failed');
-    }
+>('auth/login', async (credentials, { rejectWithValue }) => {
+  try {
+    return await authService.login(credentials);
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Login failed');
   }
-);
+});
 
-export const logoutUser = createAsyncThunk(
-  'auth/logout',
-  async (_, { rejectWithValue }) => {
-    try {
-      await authService.logout();
-      return null;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Logout failed');
-    }
-  }
-);
+// 🔑 Logout
+export const logoutUser = createAsyncThunk('auth/logout', async () => {
+  await authService.logout();
+  return null;
+});
 
-export const checkAuthStatus = createAsyncThunk(
-  'auth/checkStatus',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await authService.checkAuthStatus();
-      return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Auth check failed');
-    }
+// 🔑 Restore session from AsyncStorage
+export const restoreSessionFromStorage = createAsyncThunk<
+  LoginResponse | null,
+  void,
+  { rejectValue: string }
+>('auth/restoreSession', async (_, { rejectWithValue }) => {
+  try {
+    return await authService.checkAuthStatus();
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Session restore failed');
   }
-);
+});
 
 const authSlice = createSlice({
   name: 'auth',
@@ -80,40 +71,42 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.token = action.payload.token;
-        state.refreshToken = action.payload.refreshToken;
-        state.user = action.payload.user || null; // optional
+        state.refreshToken = action.payload.refreshToken || null;
+        state.user = action.payload.user || null;
         state.isAuthenticated = true;
-        state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Login failed';
         state.isAuthenticated = false;
-      });
-
-    // Logout
-    builder.addCase(logoutUser.fulfilled, (state) => {
-      state.user = null;
-      state.token = null;
-      state.refreshToken = null;
-      state.isAuthenticated = false;
-      state.error = null;
-    });
-
-    // Check auth status
-    builder
-      .addCase(checkAuthStatus.fulfilled, (state, action) => {
-        if (action.payload) {
-          state.user = action.payload.user || null;
-          state.token = action.payload.token || null;
-          state.refreshToken = action.payload.refreshToken || null;
-          state.isAuthenticated = true;
-        }
-        state.isLoading = false;
       })
-      .addCase(checkAuthStatus.rejected, (state) => {
+
+      // Logout
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.refreshToken = null;
         state.isAuthenticated = false;
+      })
+
+      // Restore session
+      .addCase(restoreSessionFromStorage.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(restoreSessionFromStorage.fulfilled, (state, action) => {
         state.isLoading = false;
+        if (action.payload) {
+          state.token = action.payload.token;
+          state.refreshToken = action.payload.refreshToken || null;
+          state.user = action.payload.user || null;
+          state.isAuthenticated = true;
+        } else {
+          state.isAuthenticated = false;
+        }
+      })
+      .addCase(restoreSessionFromStorage.rejected, (state) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
       });
   },
 });
