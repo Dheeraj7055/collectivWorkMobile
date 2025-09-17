@@ -157,6 +157,17 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 16,
     backgroundColor: '#fff',
+    // marginTop: 20
+  },
+  dropdownDept: {
+    height: 50,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    marginTop: 20
   },
   placeholderStyle: {
     fontSize: 14,
@@ -169,7 +180,7 @@ export const styles = StyleSheet.create({
   headerRow: {
   flexDirection: "row",
   alignItems: "center",
-  marginBottom: 16,
+  // marginBottom: 16,
 },
 iconGeneralCircle: {
   width: 40,
@@ -272,5 +283,53 @@ uploadHint: {
   color: "#888",
   marginTop: 4,
 },
-
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e0f2f1",
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    margin: 4,
+  },
+  chipText: {
+    marginRight: 6,
+    fontSize: 14,
+  },
+  removeText: {
+    color: "red",
+    fontWeight: "bold",
+  },
+  quesLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    // marginBottom: 8,
+  },
+  optionNumber: {
+    width: 30,
+    textAlign: "center",
+    fontWeight: "600",
+    fontSize: 14,
+    height: 50,
+    textAlignVertical: "center",
+  },
+  addOption: {
+    color: "#007BFF",
+    // marginTop: 8,
+    fontWeight: "600",
+  },
+  optionsInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    backgroundColor: "#fff",
+    height: 40,
+  },
 });
