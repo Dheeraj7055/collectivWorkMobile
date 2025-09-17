@@ -15,19 +15,109 @@ import {
   Check,
   ArrowUpRight,
 } from "lucide-react-native";
+import { AppDispatch, RootState } from "@/redux/store";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchAttendance,
+  punchAttendance,
+} from "@/redux/slices/attendanceSlice";
 
 export const AttendanceScreen: React.FC = () => {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState("00:00:00");
+  const [currentDate, setCurrentDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
 
-  // ⏱ Live clock
+  const dispatch = useDispatch<AppDispatch>();
+  const { todayRecord, isCheckedIn, isLoading } = useSelector(
+    (state: RootState) => state.attendance
+  );
+
+  // 🔹 Fetch attendance on mount
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+    dispatch(fetchAttendance());
+  }, [dispatch]);
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString("en-GB", { hour12: false });
+  // 🔹 Start timer when todayRecord.date exists
+  useEffect(() => {
+    if (!todayRecord?.punch_in) {
+      setCurrentTime("00:00:00");
+      return;
+    }
+    const punchInTime = new Date(todayRecord.punch_in).getTime();
+    if (!todayRecord.punch_out) {
+      // live ticking from punch_in to NOW
+      const interval = setInterval(() => {
+        const now = Date.now();
+        const diff = now - punchInTime;
+  
+        const hours = Math.floor(diff / (1000 * 60 * 60))
+          .toString()
+          .padStart(2, "0");
+        const minutes = Math.floor((diff / (1000 * 60)) % 60)
+          .toString()
+          .padStart(2, "0");
+        const seconds = Math.floor((diff / 1000) % 60)
+          .toString()
+          .padStart(2, "0");
+  
+        setCurrentTime(`${hours}:${minutes}:${seconds}`);
+      }, 1000);
+  
+      return () => clearInterval(interval);
+    } else {
+      // static diff between punch_in and punch_out
+      const punchOutTime = new Date(todayRecord.punch_out).getTime();
+      const diff = punchOutTime - punchInTime;
+  
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+        .toString()
+        .padStart(2, "0");
+      const minutes = Math.floor((diff / (1000 * 60)) % 60)
+        .toString()
+        .padStart(2, "0");
+      const seconds = Math.floor((diff / 1000) % 60)
+        .toString()
+        .padStart(2, "0");
+  
+      setCurrentTime(`${hours}:${minutes}:${seconds}`);
+    }
+  }, [todayRecord?.punch_in, todayRecord?.punch_out]);
 
+  // 🔹 Handle Punch
+  const handlePunch = () => {
+    const type = isCheckedIn ? "out" : "in";
+    debugger
+    dispatch(punchAttendance({ action: type }));
+  };
+
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+  
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"
+    ];
+  
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+  
+    // Add suffix (st, nd, rd, th)
+    const suffix =
+      day % 10 === 1 && day !== 11
+        ? "st"
+        : day % 10 === 2 && day !== 12
+        ? "nd"
+        : day % 10 === 3 && day !== 13
+        ? "rd"
+        : "th";
+  
+    return `${month} ${day}${suffix} ${year}`;
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -37,30 +127,26 @@ export const AttendanceScreen: React.FC = () => {
         {/* 🔹 Header */}
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Attendance</Text>
-          <Text style={styles.timer}>{formatTime(currentTime)}</Text>
+          <Text style={styles.timer}>{currentTime}</Text>
         </View>
 
         {/* 🔹 Today’s Utilization */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Today's Time Utilization</Text>
-          <Text style={styles.subText}>
-            {currentTime.toLocaleDateString("en-US", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </Text>
-          <TouchableOpacity style={styles.punchButton}>
-            <Text style={styles.punchText}>Punch In</Text>
+          <Text style={styles.subText}>{formatDisplayDate(currentDate)}</Text>
+          <TouchableOpacity style={styles.punchButton} onPress={handlePunch}>
+            <Text style={styles.punchText}>
+              {isCheckedIn ? "Punch Out" : "Punch In"}
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* 🔹 Calendar */}
         <View style={styles.card}>
           <Calendar
-            current={currentTime.toISOString().split("T")[0]}
+            current={currentDate}
             markedDates={{
-              [currentTime.toISOString().split("T")[0]]: {
+              [currentDate]: {
                 selected: true,
                 selectedColor: "#2196F3",
               },
@@ -161,9 +247,7 @@ export const AttendanceScreen: React.FC = () => {
           {/* Holi */}
           <View style={[styles.holidayBox, { borderColor: "#E53935" }]}>
             <View>
-              <Text style={[styles.holidayName, { color: "#E53935" }]}>
-                Holi
-              </Text>
+              <Text style={[styles.holidayName, { color: "#E53935" }]}>Holi</Text>
               <Text style={styles.holidayDate}>02 October 2025</Text>
             </View>
           </View>
@@ -237,7 +321,6 @@ const styles = StyleSheet.create({
   shiftRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   actionRow: { flexDirection: "row", alignItems: "center" },
 
-  // Fix for your error
   colBox: { flex: 1 },
 
   // Shift
@@ -254,7 +337,7 @@ const styles = StyleSheet.create({
 
   link: { marginLeft: 6, color: "#0E79B6", fontWeight: "600" },
 
-  // Punch
+  // ✅ Punch
   punchButton: {
     backgroundColor: "#2196F3",
     padding: 12,
@@ -262,7 +345,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: "center",
   },
-  punchText: { color: "#fff", fontWeight: "600" },
+  punchText: { color: "#fff", fontWeight: "600", fontSize: 15 },
 
   // Holidays
   holidayBox: {

@@ -12,6 +12,8 @@ export const API_ROUTES = {
 
   //other
   ATTENDANCE: "/api/attendance/list",
+  ATTENDANCEDETAILS: "/api/attendance/details",
+  CREATEATTENDANCE: "/api/attendance/create",
   LEAVE: "/api/leave/list",
   PROFILE: "/api/users/profile",
 
