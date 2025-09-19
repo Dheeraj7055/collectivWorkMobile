@@ -11,6 +11,9 @@ export const API_ROUTES = {
   ANNOUNCEMENT_REMOVE_LIKE: "/api/announcement/like/delete",
   UPDATE_ANNOUNCEMENT: "/api/announcement",
   CREATE_ANNOUNCEMENT: "/api/announcement",
+  POLL_RESPONSE: "/api/announcement/answer/response",
+  BOOKMARK_LIST: "/api/announcement/bookmark",
+  SEND_COMMENT: "/api/announcement/comment",
 
   //other
   ATTENDANCE: "/api/attendance/list",

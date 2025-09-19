@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   View,
@@ -17,7 +17,7 @@ import { styles } from '@/styles/postScreenStyles';
 import { Header } from '@/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
-import { fetchAnnouncements } from '@/redux/slices/announcementSlice';
+import { fetchAnnouncements, fetchBookmarks } from '@/redux/slices/announcementSlice';
 import AppModal from '@/common/AppModal';
 import { Dropdown } from 'react-native-element-dropdown';
 import {
@@ -41,6 +41,9 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { apiClient } from '@/services/api';
 import { API_ROUTES } from '@/constants/apiRoutes';
 import { encodeData } from '@/utils/cryptoHelpers';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { AppStackParamList } from '@/navigation/AppNavigator';
 
 
 // --- TYPES ---
@@ -54,7 +57,10 @@ interface AudienceData {
   individuals: any[];
 }
 
+type PostScreenNavigationProp = StackNavigationProp<AppStackParamList, "MainTabs">;
+
 export const PostScreen = () => {
+  const navigation = useNavigation<PostScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const userData = useSelector((state: RootState) => state.user.profile);
   const { records, isLoading, error } = useSelector(
@@ -97,6 +103,11 @@ export const PostScreen = () => {
   const [selectedDate, setSelectedDate] = useState(new Date()); // default today
   const [showPicker, setShowPicker] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  type PostFilter = "all" | "posts" | "praise" | "liked" | "repost" | "bookmark";
+
+  const [currentPostList, setCurrentPostList] = useState<PostFilter>("all");
 
   const changePostDate = (event: DateTimePickerEvent, date?: Date) => {
     setShowPicker(false);
@@ -129,10 +140,95 @@ export const PostScreen = () => {
     { label: 'Share', value: 'share' },
   ];
 
-  // --- API call on mount ---
   useEffect(() => {
     dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
   }, [dispatch]);
+
+  const debounce = (func: (...args: any[]) => void, delay: number) => {
+    let timer: ReturnType<typeof setTimeout>;
+    return (...args: any[]) => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        func(...args);
+      }, delay);
+    };
+  };
+
+  const handleSearch = useCallback(
+    debounce((text: string) => {
+      dispatch(
+        fetchAnnouncements({
+          postName: 'all',
+          searchParam: text,
+        }),
+      );
+    }, 500),
+    [],
+  );
+
+  const handleFilterChange = (filter: PostFilter) => {
+    setCurrentPostList(filter);
+
+    switch (filter) {
+      case 'all':
+        dispatch(
+          fetchAnnouncements({
+            postName: 'all',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+
+      case 'posts':
+        dispatch(
+          fetchAnnouncements({
+            postName: 'my',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+
+      case 'praise':
+        dispatch(
+          fetchAnnouncements({
+            postName: 'praise',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+
+      case 'liked':
+        dispatch(
+          fetchAnnouncements({
+            postName: 'liked',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+
+      case 'repost':
+        dispatch(
+          fetchAnnouncements({
+            postName: 'repost',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+
+      case 'bookmark':
+        navigation.navigate('Bookmarks');
+        break;
+
+      default:
+        dispatch(
+          fetchAnnouncements({
+            postName: 'all',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+    }
+  };
 
   const addAudience = (selectedAudience: AudienceSelection) => {
     // const parents = [
@@ -374,7 +470,7 @@ const handleCreate = async () => {
     }
   } catch (err: any) {
     console.error(
-      "❌ Error creating announcement:",
+      "Error creating announcement:",
       err.response?.data || err.message
     );
     Alert.alert("Error", "Something went wrong while creating the announcement.");
@@ -397,12 +493,58 @@ const handleCreate = async () => {
             placeholder="Search"
             style={styles.searchInput}
             placeholderTextColor="#888"
+            value={searchValue}
+            onChangeText={text => {
+              setSearchValue(text);
+              handleSearch(text);
+            }}
           />
         </View>
 
-        <TouchableOpacity style={styles.iconButton}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => setDropdownVisible(!dropdownVisible)}
+        >
           <Filter size={20} color="#fff" />
         </TouchableOpacity>
+
+        {dropdownVisible && (
+          <View style={styles.dropdownMenu}>
+            {(
+              ['all', 'posts', 'praise', 'liked', 'repost', 'bookmark'] as PostFilter[]
+            ).map(option => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.dropdownItem,
+                  currentPostList === option && styles.dropdownItemSelected,
+                ]}
+                onPress={() => {
+                  handleFilterChange(option);
+                  setDropdownVisible(false);
+                }}
+              >
+                <Text
+                  style={{
+                    color: currentPostList === option ? '#0a66c2' : '#000',
+                  }}
+                >
+                  {option === 'all'
+                    ? 'All Posts'
+                    : option === 'posts'
+                    ? 'My Posts'
+                    : option === 'praise'
+                    ? 'Praise'
+                    : option === 'liked'
+                    ? 'Liked Posts'
+                    :option === 'bookmark'
+                    ? 'Bookmarked Posts'
+                    : 'Reposted Posts'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.iconButton}
@@ -411,6 +553,7 @@ const handleCreate = async () => {
           <Plus size={20} color="#fff" />
         </TouchableOpacity>
 
+      </View>
         {/* --- Modal 1: Post Type --- */}
         <AppModal visible={modalVisible} onClose={() => setModalVisible(false)}>
           <View style={styles.iconGeneralCircle}>
@@ -816,7 +959,6 @@ const handleCreate = async () => {
             <Text style={styles.confirmText}>Confirm</Text>
           </TouchableOpacity>
         </AppModal>
-      </View>
 
       {/* Loading + Error */}
       {isLoading && <ActivityIndicator size="large" color="#2196F3" />}

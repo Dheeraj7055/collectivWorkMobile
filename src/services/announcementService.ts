@@ -1,4 +1,3 @@
-// src/services/announcementService.ts
 import { apiClient } from "./api";
 import { API_ROUTES } from "@/constants/apiRoutes";
 
@@ -13,4 +12,9 @@ export const announcementService = {
 
     return await apiClient.get(url);
   },
+
+  getBookmarks: async () => {
+    return await apiClient.get(API_ROUTES.BOOKMARK_LIST);
+  },
 };
+

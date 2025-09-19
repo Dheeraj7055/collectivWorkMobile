@@ -5,7 +5,6 @@ export const attendanceService = {
   // Fetch attendance details for a given date
   getDetails: async (params?: Record<string, any>) => {
     let url = API_ROUTES.ATTENDANCEDETAILS;
-    debugger
     if (params) {
       const query = new URLSearchParams(params).toString();
       url = `${url}?${query}`;

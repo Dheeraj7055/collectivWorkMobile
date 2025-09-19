@@ -66,26 +66,26 @@ export const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     marginTop: 6,
-    overflow: 'hidden', // ✅ prevent image overflow
+    overflow: 'hidden', // prevent image overflow
   },
   halfImage: {
-    flex: 1, // ✅ no width: '50%'
+    flex: 1, // width: '50%'
     height: 250,
     borderRadius: 8,
   },
   leftLarge: {
-    flex: 1, // ✅ fill left side
+    flex: 1, // fill left side
     height: 250,
     borderRadius: 8,
     marginRight: 2,
   },
   rightColumn: {
-    flex: 1, // ✅ fill right side
+    flex: 1, // fill right side
     justifyContent: 'space-between',
   },
   quarterImage: {
     width: '100%',
-    height: 122, // ✅ 250/2 - spacing
+    height: 122, // 250/2 - spacing
     borderRadius: 8,
     marginBottom: 2,
   },
@@ -168,5 +168,209 @@ export const styles = StyleSheet.create({
   },
   singleWrapper: {
     marginTop: 6,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000",
+  },
+
+  // Comment List
+  // commentItem: {
+  //   flexDirection: "row",
+  //   marginBottom: 12,
+  //   paddingVertical: 4,
+  // },
+  avatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  commentContent: {
+    marginLeft: 10,
+    flex: 1,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    padding: 8,
+  },
+  // commentName: {
+  //   fontWeight: "600",
+  //   fontSize: 14,
+  //   color: "#222",
+  //   marginBottom: 2,
+  // },
+  // commentText: {
+  //   fontSize: 13,
+  //   color: "#444",
+  // },
+
+  commentBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 2
+  },
+  // commentListBlock: {
+  //   marginBottom: 12,
+  //   maxHeight: 150, 
+  // },
+  commentListBlock: {
+  maxHeight: 200,
+},
+
+commentItem: {
+  flexDirection: 'row',
+  marginBottom: 16,
+},
+
+// avatar: {
+//   width: 40,
+//   height: 40,
+//   borderRadius: 20,
+// },
+
+// avatarPlaceholder: {
+//   width: 40,
+//   height: 40,
+//   borderRadius: 20,
+//   justifyContent: 'center',
+//   alignItems: 'center',
+// },
+
+// avatarText: {
+//   color: '#fff',
+//   fontWeight: 'bold',
+// },
+
+commentBody: {
+  flex: 1,
+  marginLeft: 10,
+},
+
+commentHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+
+commentName: {
+  fontWeight: 'bold',
+  fontSize: 14,
+  color: '#000',
+},
+
+commentRole: {
+  fontSize: 12,
+  color: '#666',
+},
+
+commentTime: {
+  fontSize: 12,
+  color: '#666',
+},
+
+commentText: {
+  marginTop: 4,
+  fontSize: 13,
+  color: '#333',
+  lineHeight: 18,
+},
+
+commentFooter: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginTop: 6,
+},
+
+commentAction: {
+  fontSize: 12,
+  color: '#666',
+  marginRight: 8,
+},
+
+reactionsRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginRight: 8,
+},
+
+emoji: {
+  fontSize: 14,
+  marginRight: 2,
+},
+
+likeCount: {
+  fontSize: 12,
+  color: '#666',
+  marginLeft: 2,
+  marginRight: 8,
+},
+
+replyCount: {
+  fontSize: 12,
+  color: '#666',
+},
+
+
+  // Input Row
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 25,
+    paddingHorizontal: 10,
+    height: 45,
+    flex: 1
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    color: "#000",
+    marginHorizontal: 6,
+  },
+  sendButton: {
+    marginLeft: 6,
+    backgroundColor: "#2196F3",
+    borderRadius: 20,
+    padding: 8,
+  },
+  disabledSendButton: {
+    backgroundColor: "#aaa",
+  },
+
+  // Footer Buttons
+  confirmButton: {
+    backgroundColor: "#2196F3",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  confirmText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#fff",
+  },
+  cancelText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -87,7 +87,6 @@ export const AttendanceScreen: React.FC = () => {
   // 🔹 Handle Punch
   const handlePunch = () => {
     const type = isCheckedIn ? "out" : "in";
-    debugger
     dispatch(punchAttendance({ action: type }));
   };
 

@@ -48,7 +48,6 @@ export const punchAttendance = createAsyncThunk<
   { rejectValue: string }
 >("attendance/create", async (payload, { rejectWithValue }) => {
   try {
-    debugger
     const res = await attendanceService.punch(payload);
     return res.data as AttendanceRecord;
   } catch (err: any) {

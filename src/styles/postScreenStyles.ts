@@ -22,7 +22,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   searchBox: {
-    // flex: 1,
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
@@ -32,7 +32,6 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     height: 45,
-    width: 279
   },
 
   searchIcon: {
@@ -40,7 +39,7 @@ export const styles = StyleSheet.create({
   },
 
   searchInput: {
-    // flex: 1,
+    flex: 1,
     fontSize: 14,
     color: '#000',
   },
@@ -167,7 +166,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 16,
     backgroundColor: '#fff',
-    marginTop: 20
+    marginTop: 20,
   },
   placeholderStyle: {
     fontSize: 14,
@@ -178,115 +177,117 @@ export const styles = StyleSheet.create({
     color: '#000',
   },
   headerRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  // marginBottom: 16,
-},
-iconGeneralCircle: {
-  width: 40,
-  height: 40,
-  borderRadius: 20,
-  backgroundColor: "#E6F0FF",
-  justifyContent: "center",
-  alignItems: "center",
-  marginRight: 12,
-},
-// iconText: {
-//   fontSize: 18,
-// },
-input: {
-  borderWidth: 1,
-  borderColor: "#ddd",
-  borderRadius: 8,
-  padding: 10,
-  marginBottom: 16,
-  backgroundColor: "#fff",
-},
-textarea: {
-  height: 100,
-  textAlignVertical: "top",
-},
-permissionItem: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingVertical: 10,
-  paddingHorizontal: 8,
-},
-checkbox: {
-  width: 20,
-  height: 20,
-  borderRadius: 4,
-  borderWidth: 1,
-  borderColor: "#999",
-},
-checkboxChecked: {
-  backgroundColor: "#0a66c2",
-  borderColor: "#0a66c2",
-},
-imgIconBlock: {
-  marginTop: 6,
-  flexDirection: 'row',
-  paddingVertical: 10,
-  gap: 8
-},
-buttonRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  marginTop: 20,
-},
-backButton: {
-  backgroundColor: "#ccc",
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  borderRadius: 8,
-},
-backText: {
-  color: "#333",
-  fontSize: 16,
-},
-dropdownItem: {
-  flexDirection: "row",
-  alignItems: "center",
-  padding: 10,
-},
-modalFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'space-between',
+    // marginBottom: 16,
+  },
+  iconGeneralCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E6F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  // iconText: {
+  //   fontSize: 18,
+  // },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  textarea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  permissionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#999',
+  },
+  checkboxChecked: {
+    backgroundColor: '#0a66c2',
+    borderColor: '#0a66c2',
+  },
+  imgIconBlock: {
+    marginTop: 6,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    gap: 8,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  backButton: {
+    backgroundColor: '#ccc',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  backText: {
+    color: '#333',
+    fontSize: 16,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 20,
   },
 
-uploadBox: {
-  borderWidth: 1,
-  borderColor: "#ddd",
-  borderRadius: 8,
-  padding: 20,
-  alignItems: "center",
-  justifyContent: "center",
-  marginBottom: 20,
-  backgroundColor: "#FAFAFA",
-},
+  uploadBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    backgroundColor: '#FAFAFA',
+  },
 
-uploadText: {
-  fontSize: 14,
-  color: "#555",
-  marginTop: 8,
-},
+  uploadText: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 8,
+  },
 
-uploadLink: {
-  color: "#0E79B6",
-  fontWeight: "600",
-},
+  uploadLink: {
+    color: '#0E79B6',
+    fontWeight: '600',
+  },
 
-uploadHint: {
-  fontSize: 12,
-  color: "#888",
-  marginTop: 4,
-},
+  uploadHint: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 4,
+  },
   chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#e0f2f1",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e0f2f1',
     borderRadius: 16,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -297,39 +298,140 @@ uploadHint: {
     fontSize: 14,
   },
   removeText: {
-    color: "red",
-    fontWeight: "bold",
+    color: 'red',
+    fontWeight: 'bold',
   },
   quesLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
     marginBottom: 6,
   },
   optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     // marginBottom: 8,
   },
   optionNumber: {
     width: 30,
-    textAlign: "center",
-    fontWeight: "600",
+    textAlign: 'center',
+    fontWeight: '600',
     fontSize: 14,
     height: 50,
-    textAlignVertical: "center",
+    textAlignVertical: 'center',
   },
   addOption: {
-    color: "#007BFF",
+    color: '#007BFF',
     // marginTop: 8,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   optionsInput: {
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
     fontSize: 14,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     height: 40,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 50,
+    right: 10,
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+    paddingVertical: 4,
+    minWidth: 160,
+    zIndex: 1000,
+  },
+
+  dropdownItemSelected: {
+    backgroundColor: '#e6f0fa',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    color: '#000',
+  },
+  bookmarkCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    margin: 12,
+  },
+
+  bookmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    // margin: 12,
+    padding: 8,
+  },
+
+  bookmarkContent: {
+    flex: 1,
+    flexShrink: 1,
+  },
+
+  separator: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginVertical: 8,
+  },
+
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+
+  avatarText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  subject: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#0a66c2',
+    marginBottom: 4,
+  },
+
+  description: {
+    fontSize: 13,
+    color: '#444',
+    flexWrap: 'wrap',
+  },
+  bookmarkBlock: {
+    marginTop: 5,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  bookMarkText: {
+    fontSize: 11,
+  },
+  bookmarkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    marginTop: 10
+  },
+
+  bookmarkTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    flex: 1,
   },
 });
