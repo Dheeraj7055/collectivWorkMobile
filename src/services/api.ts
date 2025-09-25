@@ -8,7 +8,7 @@ import { API_BASE_URL } from "@env";
 import { store } from "@/redux/store";
 
 const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL || "http://localhost:3000/api",
+  baseURL: API_BASE_URL || "http://10.0.2.2:3000/api",
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
@@ -27,7 +27,7 @@ api.interceptors.request.use(
       // Let Axios set correct `multipart/form-data` boundary
       config.headers.delete?.("Content-Type"); // remove default
       config.headers.set("Content-Type", "multipart/form-data");
-
+      
       // Debug FormData parts (React Native FormData has `_parts`)
       const parts = (config.data as any)._parts || [];
       console.log(

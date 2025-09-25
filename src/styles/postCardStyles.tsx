@@ -345,6 +345,10 @@ replyCount: {
   },
   disabledSendButton: {
     backgroundColor: "#aaa",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 8,
   },
 
   // Footer Buttons

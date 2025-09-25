@@ -5,6 +5,7 @@ import userSlice from './slices/userSlice';
 import attendanceSlice from './slices/attendanceSlice';
 import announcementReducer from './slices/announcementSlice';
 import departmentReducer from './slices/departmentSlice';
+import leaveReducer from './slices/leaveSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     attendance: attendanceSlice,
     announcements: announcementReducer,
     department: departmentReducer,
+    leave: leaveReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

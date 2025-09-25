@@ -8,7 +8,9 @@ import { PostScreen } from "@/screens/PostScreen";
 import { ProfileScreen } from "@/screens/ProfileScreen";
 import { AttendanceScreen } from "@/screens/AttendanceScreen";
 import { LeaveScreen } from "@/screens/LeaveScreen";
-import { BookmarkScreen } from "@/screens/BookmarkScreen"; // ✅ import BookmarkScreen
+import { BookmarkScreen } from "@/screens/BookmarkScreen";
+import useLiveLocation from "@/hooks/useLiveLocation";
+import { LeaveRequestDetailScreen } from "@/screens/LeaveRequestDetailScreen";
 
 // Placeholder screens
 const ChatScreen = () => <Text>Chat Screen</Text>;
@@ -23,7 +25,8 @@ export type MainTabParamList = {
 
 export type AppStackParamList = {
   MainTabs: undefined;
-  Bookmarks: undefined; // ✅ add new route for bookmarks
+  Bookmarks: undefined;
+  LeaveRequestDetail: { leave_id: string | number };
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -99,11 +102,16 @@ const MainTabs: React.FC = () => {
 };
 
 export const AppNavigator: React.FC = () => {
+  useLiveLocation();
+  
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="Bookmarks" component={BookmarkScreen} /> 
-      {/* ✅ now navigation.navigate("Bookmarks") will work */}
+      <Stack.Screen
+        name="LeaveRequestDetail"
+        component={LeaveRequestDetailScreen}
+      />
     </Stack.Navigator>
   );
 };

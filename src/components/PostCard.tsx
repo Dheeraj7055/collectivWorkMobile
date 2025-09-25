@@ -25,6 +25,7 @@ import { Announcement, CommentItem, MediaItem } from '@/types/announcement';
 import { Award, Gift, Star, ThumbsUp } from 'lucide-react-native';
 import FastImage from 'react-native-fast-image';
 import PraiseTrophy from '../../assets/images/praise-trophy.svg';
+
 import AppModal from '@/common/AppModal';
 import { getInitials } from '@/common/CommonFunctions';
 
@@ -83,11 +84,12 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
         payload: encodedPayload,
       });
 
-      if (response?.data?.success) {
+      if (response?.data && response?.success) {
         const newEntry: CommentItem = {
           id: Date.now().toString(),
           comment: newComment,
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
           User: {
             id: userData.id,
             first_name: userData.first_name || '',
@@ -102,7 +104,6 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
         setPostComments(prev => [...prev, newEntry]);
         setNewComment('');
 
-        // Refresh post data from backend (to sync comments count)
         dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
       } else {
         console.warn(response?.data?.message || 'Failed to comment on post.');
@@ -480,7 +481,9 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                     {/* <Text style={styles.commentRole}>{item.User.designation}</Text> */}
                   </View>
                   <Text style={styles.commentTime}>
-                    {item.updated_at ? moment(item.updated_at).fromNow() : '2d'}
+                    {item.updated_at
+                      ? moment(item.updated_at).fromNow()
+                      : 'now'}
                   </Text>
                 </View>
 
@@ -489,13 +492,13 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
 
                 {/* Reactions Row */}
                 <View style={styles.commentFooter}>
-                  <Text style={styles.commentAction}>Like.</Text>
-                  <View style={styles.reactionsRow}>
+                  <Text style={styles.commentAction}>Like</Text>
+                  {/* <View style={styles.reactionsRow}>
                     <Text style={styles.emoji}>👍</Text>
                     <Text style={styles.emoji}>❤️</Text>
                     <Text style={styles.emoji}>👏</Text>
                     <Text style={styles.likeCount}>18</Text>
-                  </View>
+                  </View> */}
                   {/* <Text style={styles.commentAction}>Reply</Text>
                   <Text style={styles.replyCount}>12 Replies</Text> */}
                 </View>
@@ -532,7 +535,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
               <Text style={{ fontSize: 20, marginRight: 6 }}>😊</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[
                 styles.sendButton,
                 !newComment.trim() && styles.disabledSendButton,
@@ -541,13 +544,18 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
               onPress={handleSendComment}
             >
               <Text style={{ color: '#fff' }}>➤</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
         {/* Footer Buttons */}
         <TouchableOpacity
-          style={styles.confirmButton}
+          // style={styles.confirmButton}
+          style={[
+            styles.sendButton,
+            !newComment.trim() && styles.disabledSendButton,
+          ]}
+          disabled={!newComment.trim()}
           onPress={handleSendComment}
         >
           <Text style={styles.confirmText}>Comment</Text>
@@ -796,7 +804,6 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                   fill="none"
                   style={{ position: 'absolute', top: 0, left: 0 }}
                 >
-                  {/* Left Ribbon */}
                   <Path
                     d="M26.0945 52.0416L21.0855 69.9999L14.8202 62.7222L5.69264 65.7065L10.7017 47.7481C11.0812 46.3873 11.9858 45.233 13.2165 44.5392C14.4471 43.8453 15.903 43.6688 17.2638 44.0483L22.3947 45.4795C23.7555 45.859 24.9098 46.7636 25.6037 47.9943C26.2975 49.2249 26.4741 50.6808 26.0945 52.0416Z"
                     stroke={announcement?.Badge?.color || '#F9A80A'}
@@ -804,7 +811,6 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {/* Right Ribbon */}
                   <Path
                     d="M43.8241 47.7423L48.8346 65.7002L39.7068 62.7168L33.4421 69.995L28.4316 52.0371C28.0519 50.6763 28.2283 49.2204 28.9221 47.9897C29.6158 46.759 30.77 45.8543 32.1308 45.4747L37.2617 44.0431C38.6224 43.6634 40.0783 43.8398 41.309 44.5336C42.5397 45.2273 43.4444 46.3815 43.8241 47.7423Z"
                     stroke={announcement?.Badge?.color || '#F9A80A'}
@@ -812,7 +818,6 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {/* Circle */}
                   <Rect
                     x={0.367188}
                     width={53.2681}

@@ -23,5 +23,16 @@ export const API_ROUTES = {
   PROFILE: "/api/users/profile",
 
   //users
-  userNamesList: '/api/users/profile'
+  userNamesList: '/api/users/profile',
+
+
+  //leave
+  USER_LEAVE_LIST: "/api/leaves/request/list",
+  USER_LEAVE_QUOTA_LIST: "/api/leaves/type/list",
+  USER_LEAVE_DETAILS: "/api/leaves/request/details",
+  USER_LEAVE_COMMENTS_LIST: "/api/leaves/comments/list",
+  CREATE_LEAVE_COMMENT: "/api/leaves/comments",
+  UPDATE_LEAVE_COMMENT: "/api/leaves/comments/update",
+  DELETE_LEAVE_COMMENT: '/api/leaves/comments',
+  CREATE_LEAVE: "/api/leaves/request",
 };
