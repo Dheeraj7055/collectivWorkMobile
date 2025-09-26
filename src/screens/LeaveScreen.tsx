@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -110,7 +110,7 @@ export const LeaveScreen: React.FC = () => {
   // Common form validation flag
   const [showErrors, setShowErrors] = useState<boolean>(false);
 
-  const [leaveListOptions, setLeaveListOptions] = useState<string[]>([]);
+  // const [leaveListOptions, setLeaveListOptions] = useState<string[]>([]);
   // ----------------------------
   // State Declarations
   // ----------------------------
@@ -309,16 +309,27 @@ export const LeaveScreen: React.FC = () => {
     }
   };
 
-  const renderFakeInput = (
-    label: string,
-    value: Date | null,
-    onPress: () => void,
-  ) => (
-    <TouchableOpacity style={styles.input} onPress={onPress}>
-      <Text style={{ color: value ? '#000' : '#888' }}>
-        {value ? value.toLocaleDateString() : label}
-      </Text>
-    </TouchableOpacity>
+  // const renderFakeInput = (
+  //   label: string,
+  //   value: Date | null,
+  //   onPress: () => void,
+  // ) => (
+  //   <TouchableOpacity style={styles.input} onPress={onPress}>
+  //     <Text style={{ color: value ? '#000' : '#888' }}>
+  //       {value ? value.toLocaleDateString() : label}
+  //     </Text>
+  //   </TouchableOpacity>
+  // );
+
+  const renderFakeInput = useCallback(
+    (label: string, value: Date | null, onPress: () => void) => (
+      <TouchableOpacity style={styles.input} onPress={onPress}>
+        <Text style={{ color: value ? '#000' : '#888' }}>
+          {value ? value.toLocaleDateString() : label}
+        </Text>
+      </TouchableOpacity>
+    ),
+    [],
   );
 
   const handleDay = (value: string | null) => {
@@ -346,7 +357,31 @@ export const LeaveScreen: React.FC = () => {
     dispatch(fetchUserNamesList({}));
   };
 
-  const calculateTotalLeaveDays = () => {
+  // const calculateTotalLeaveDays = () => {
+  //   if (!dayType || !startDate) return 0;
+
+  //   if (dayType === 'short') return 0.25;
+  //   if (dayType === 'half') return 0.5;
+  //   if (dayType === 'single') return 1;
+
+  //   if (dayType === 'multiple' && endDate) {
+  //     const start = moment(startDate).startOf('day');
+  //     const end = moment(endDate).startOf('day');
+  //     const diff = end.diff(start, 'days') + 1;
+
+  //     // Half-day adjustments
+  //     if (startHalf === 'second_half' && endHalf === 'first_half')
+  //       return diff - 1;
+  //     if (startHalf === 'second_half') return diff - 0.5;
+  //     if (endHalf === 'first_half') return diff - 0.5;
+
+  //     return diff;
+  //   }
+
+  //   return 0;
+  // };
+
+  const calculateTotalLeaveDays = useCallback(() => {
     if (!dayType || !startDate) return 0;
 
     if (dayType === 'short') return 0.25;
@@ -368,14 +403,27 @@ export const LeaveScreen: React.FC = () => {
     }
 
     return 0;
-  };
+  }, [dayType, startDate, endDate, startHalf, endHalf]);
 
-  const clubLeaveEnabled = () => {
+  // const clubLeaveEnabled = () => {
+  //   if (dayType !== 'multiple') return false;
+  //   if (!multipleDay) return false;
+  //   if (!clubLeaveAllowed) return false;
+  //   return calculateTotalLeaveDays() > leaveRemainingLeaves;
+  // };
+
+  const clubLeaveEnabled = useCallback(() => {
     if (dayType !== 'multiple') return false;
     if (!multipleDay) return false;
     if (!clubLeaveAllowed) return false;
     return calculateTotalLeaveDays() > leaveRemainingLeaves;
-  };
+  }, [
+    dayType,
+    multipleDay,
+    clubLeaveAllowed,
+    calculateTotalLeaveDays,
+    leaveRemainingLeaves,
+  ]);
 
   const renderUserOptions = (userData: any, userNamesList: any[]) => {
     const managerOptions: any[] = [];
@@ -618,7 +666,6 @@ export const LeaveScreen: React.FC = () => {
       .unwrap()
       .then((res) => {
         console.log("✅ Leave created successfully", res);
-        // clear form
         setSubject("");
         setSelectedLeaveType("");
         setDayType("");
@@ -629,6 +676,9 @@ export const LeaveScreen: React.FC = () => {
         setEndDate(null);
         setStartHalf("");
         setEndHalf("");
+        const payload = { current: 1, pageSize: 100, request_type: 'Admin' };
+        dispatch(fetchLeaves(payload) as any);
+        setLeaveModalVisible(false);
       })
       .catch((err) => {
         console.error("❌ Leave creation failed", err);
@@ -638,7 +688,7 @@ export const LeaveScreen: React.FC = () => {
 
 
   useEffect(() => {
-    const payload = { current: 1, pageSize: 5, request_type: 'Admin' };
+    const payload = { current: 1, pageSize: 100, request_type: 'Admin' };
     dispatch(fetchLeaves(payload) as any);
   }, [dispatch]);
 
@@ -646,42 +696,76 @@ export const LeaveScreen: React.FC = () => {
     dispatch(fetchUserData());
   }, [dispatch]);
 
+  // useEffect(() => {
+  //   if (userData?.user_id) {
+  //     dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
+  //   }
+  // }, [dispatch, userData]);
+
   useEffect(() => {
     if (userData?.user_id) {
       dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
     }
-  }, [dispatch, userData]);
+  }, [userData?.user_id, dispatch]);
 
-  useEffect(() => {
-    if (userLeaveQuotaList) {
-      const userGender = userData?.gender?.toLowerCase();
-      const userMaritalStatus = userData?.marital_status?.toLowerCase();
+  // useEffect(() => {
+  //   if (userLeaveQuotaList) {
+  //     const userGender = userData?.gender?.toLowerCase();
+  //     const userMaritalStatus = userData?.marital_status?.toLowerCase();
 
-      const leaveConfigs = userLeaveQuotaList?.leave_config || [];
+  //     const leaveConfigs = userLeaveQuotaList?.leave_config || [];
 
-      const filteredLeaveTypes = leaveConfigs
-        .filter((item: any) => {
-          const genderMatch =
-            !item.gender?.length ||
-            item.gender
-              .map((g: string) => g.toLowerCase())
-              .includes(userGender);
+  //     const filteredLeaveTypes = leaveConfigs
+  //       .filter((item: any) => {
+  //         const genderMatch =
+  //           !item.gender?.length ||
+  //           item.gender
+  //             .map((g: string) => g.toLowerCase())
+  //             .includes(userGender);
 
-          const maritalMatch =
-            !item.marital_status?.length ||
-            item.marital_status
-              .map((m: string) => m.toLowerCase())
-              .includes(userMaritalStatus);
+  //         const maritalMatch =
+  //           !item.marital_status?.length ||
+  //           item.marital_status
+  //             .map((m: string) => m.toLowerCase())
+  //             .includes(userMaritalStatus);
 
-          const isActive = item.status?.toLowerCase() !== 'inactive';
-          return genderMatch && maritalMatch && isActive;
-        })
-        .map((item: any) => item.leave_type)
-        .filter((type: string) => type.toLowerCase() !== 'lop');
+  //         const isActive = item.status?.toLowerCase() !== 'inactive';
+  //         return genderMatch && maritalMatch && isActive;
+  //       })
+  //       .map((item: any) => item.leave_type)
+  //       .filter((type: string) => type.toLowerCase() !== 'lop');
 
-      setLeaveListOptions(filteredLeaveTypes);
-    }
-  }, [userLeaveQuotaList, userData]);
+  //     setLeaveListOptions(filteredLeaveTypes);
+  //   }
+  // }, [userLeaveQuotaList, userData]);
+
+  const leaveListOptions: string[] = useMemo(() => {
+    if (!userLeaveQuotaList) return [];
+    const userGender = userData?.gender?.toLowerCase();
+    const userMaritalStatus = userData?.marital_status?.toLowerCase();
+
+    return (userLeaveQuotaList?.leave_config || [])
+      .filter((item: any) => {
+        const genderMatch =
+          !item.gender?.length ||
+          item.gender.map((g: string) => g.toLowerCase()).includes(userGender);
+
+        const maritalMatch =
+          !item.marital_status?.length ||
+          item.marital_status
+            .map((m: string) => m.toLowerCase())
+            .includes(userMaritalStatus);
+
+        return (
+          genderMatch &&
+          maritalMatch &&
+          item.status?.toLowerCase() !== 'inactive'
+        );
+      })
+      .map((item: any) => item.leave_type as string)
+      .filter((type: string) => type.toLowerCase() !== 'lop');
+  }, [userLeaveQuotaList, userData?.gender, userData?.marital_status]);
+
 
   return (
     <>
