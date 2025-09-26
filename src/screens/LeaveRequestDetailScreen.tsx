@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   createLeaveComment,
   deleteLeaveComment,
   fetchLeaveComments,
+  fetchUserLeaveQuotaList,
   getLeaveUser,
   updateLeaveComment,
 } from '@/redux/slices/leaveSlice'; // ✅ your thunk
@@ -27,11 +28,13 @@ import {
   getFullName,
   getInitials,
 } from '@/common/CommonFunctions';
+import EditLeaveModal from './LeaveModal/EditLeaveModal';
+import { fetchUserNamesList } from '@/redux/slices/userSlice';
 
 export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
   const { leave_id } = route.params;
   const userData = useSelector((state: RootState) => state.user.profile);
-  console.log('userData', userData)
+  const { names } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch<AppDispatch>();
 
   const { leaveUser, isDetailLoading, leaveComments, isCommentsLoading } =
@@ -48,29 +51,29 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
   const [menuFor, setMenuFor] = useState<number | string | null>(null);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   // const [commentTexts, setCommentTexts] = useState<Record<string | number, string>>({});
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingLeaveData, setEditingLeaveData] = useState<any>(null);
+  const { userLeaveQuotaList } = useSelector((state: RootState) => state.leave);
+  const [reasonList, setReasonList] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (leave_id) {
-      dispatch(getLeaveUser({ leave_id }));
-      dispatch(fetchLeaveComments({ leave_id }));
-    }
-  }, [leave_id]);
+  // const openEditModal = (leave: any) => {
+  //   setEditingLeaveData(leave);
+  //   setEditModalVisible(true);
+  // };
 
-  if (isDetailLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2196F3" />
-      </View>
+  const openEditModal = (leave: any) => {
+    setEditingLeaveData(leave);
+    dispatch(fetchUserNamesList({}));
+    
+    const matched = userLeaveQuotaList?.leave_config?.find(
+      (item: any) => item.leave_type === leave.leave_type,
     );
-  }
+    setReasonList(matched?.reason_list || []);
 
-  if (!leaveUser) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>No data found</Text>
-      </View>
-    );
-  }
+    setEditModalVisible(true);
+  };
+
+  
 
   const getActionUserHeading = (status?: string) => {
     if (!status) return 'Requested To';
@@ -182,8 +185,74 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
     setMenuFor(null);
   };
 
+  const leaveListOptions: string[] = useMemo(() => {
+    if (!userLeaveQuotaList) return [];
+    const userGender = userData?.gender?.toLowerCase();
+    const userMaritalStatus = userData?.marital_status?.toLowerCase();
+
+    return (userLeaveQuotaList?.leave_config || [])
+      .filter((item: any) => {
+        const genderMatch =
+          !item.gender?.length ||
+          item.gender.map((g: string) => g.toLowerCase()).includes(userGender);
+
+        const maritalMatch =
+          !item.marital_status?.length ||
+          item.marital_status
+            .map((m: string) => m.toLowerCase())
+            .includes(userMaritalStatus);
+
+        return (
+          genderMatch &&
+          maritalMatch &&
+          item.status?.toLowerCase() !== 'inactive'
+        );
+      })
+      .map((item: any) => item.leave_type as string)
+      .filter((type: string) => type.toLowerCase() !== 'lop');
+  }, [userLeaveQuotaList, userData?.gender, userData?.marital_status]);
+
+  useEffect(() => {
+    if (userData?.user_id) {
+      dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
+    }
+  }, [userData?.user_id, dispatch]);
+
+  useEffect(() => {
+    dispatch(getLeaveUser({ leave_id }));
+    dispatch(fetchLeaveComments({ leave_id }));
+  }, [leave_id, dispatch]);
+
+  if (isDetailLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#2196F3" />
+      </View>
+    );
+  }
+
+  if (!leaveUser) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>No data found</Text>
+      </View>
+    );
+  }
+
   return (
     <>
+      {editingLeaveData && (
+        <EditLeaveModal
+          visible={editModalVisible}
+          onClose={() => setEditModalVisible(false)}
+          leaveData={editingLeaveData}
+          leaveListOptions={leaveListOptions}
+          reasonList={reasonList ?? []}
+          names={names ?? []}
+          userData={userData ?? {}}
+        />
+      )}
+
       <Modal visible={!!previewUrl} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -215,13 +284,14 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
         {/* Header */}
         <View style={styles.topHeader}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.back}>
-              {'<'} {leaveUser?.subject}
-            </Text>
+            <Text style={styles.back}>{'<'} Back</Text>
           </TouchableOpacity>
           <Text style={styles.topTitle}>{leaveUser?.subject}</Text>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <MoreVertical size={20} color="#333" />
+          </TouchableOpacity> */}
+          <TouchableOpacity onPress={() => openEditModal(leaveUser)}>
+            <Text style={{ color: '#0E79B6' }}>Edit</Text>
           </TouchableOpacity>
         </View>
 

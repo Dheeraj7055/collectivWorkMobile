@@ -70,4 +70,16 @@ export const leaveService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+
+  // ✅ Update Leave
+  updateLeave: async (formData: FormData) => {
+    return await apiClient.post(API_ROUTES.UPDATE_LEAVE, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  // ✅ Withdraw leave request
+  withdrawLeave: async (params: Record<string, any>) => {
+    return await apiClient.post(API_ROUTES.WITHDRAW_LEAVE, params);
+  },
 };

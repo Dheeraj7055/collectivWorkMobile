@@ -35,4 +35,6 @@ export const API_ROUTES = {
   UPDATE_LEAVE_COMMENT: "/api/leaves/comments/update",
   DELETE_LEAVE_COMMENT: '/api/leaves/comments',
   CREATE_LEAVE: "/api/leaves/request",
+  WITHDRAW_LEAVE: "/api/leaves/withdraw/status",
+  UPDATE_LEAVE: "/api/leaves/request",
 };

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { ProgressCircle } from 'react-native-svg-charts';
 import { styles, pickerSelectStyles } from '@/styles/leaveStyles';
-import { MoreVertical, Plus, Search, Upload } from 'lucide-react-native';
+import { MoreVertical, Plus, Search, Upload, XCircleIcon } from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
@@ -20,6 +20,7 @@ import {
   createLeave,
   fetchLeaves,
   fetchUserLeaveQuotaList,
+  withdrawLeave,
 } from '@/redux/slices/leaveSlice';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchUserData, fetchUserNamesList } from '@/redux/slices/userSlice';
@@ -31,6 +32,10 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { AppStackParamList } from '@/navigation/AppNavigator';
 import { StackNavigationProp } from '@react-navigation/stack';
+import LeaveBalanceDonut from '@/components/LeaveBalanceDonut';
+import ConfirmationModal from '@/common/ConfirmationModal';
+import dayjs from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 
 interface LeaveSummary {
   id: string;
@@ -53,48 +58,11 @@ interface LeaveRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
 }
 
-const leaveSummaryData: LeaveSummary[] = [
-  {
-    id: 'lop',
-    title: 'Loss of Pay (LOP)',
-    short: 'LOP',
-    consumed: 2,
-    allocated: 10,
-    annual: 10,
-    color: '#2196F3',
-  },
-  {
-    id: 'el',
-    title: 'Emergency Leave (EL)',
-    short: 'EL',
-    consumed: 2,
-    allocated: 10,
-    annual: 10,
-    color: '#00BFA5',
-  },
-  {
-    id: 'cl',
-    title: 'Casual Leave (CL)',
-    short: 'CL',
-    consumed: 2,
-    allocated: 10,
-    annual: 10,
-    color: '#FF9800',
-  },
-  {
-    id: 'sl',
-    title: 'Sick Leave (SL)',
-    short: 'SL',
-    consumed: 2,
-    allocated: 10,
-    annual: 10,
-    color: '#F44336',
-  },
-];
-
 type LeaveScreenNavProp = StackNavigationProp<AppStackParamList, 'MainTabs'>;
+dayjs.extend(isSameOrBefore);
 
 export const LeaveScreen: React.FC = () => {
+
   const userData = useSelector((state: RootState) => state.user.profile);
   const { names } = useSelector((state: RootState) => state.user);
   const { userLeaveQuotaList } = useSelector((state: RootState) => state.leave);
@@ -163,14 +131,14 @@ export const LeaveScreen: React.FC = () => {
   const [leaveClubedNotAllowed, setLeaveClubedNotAllowed] = useState<string[]>(
     [],
   );
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
 
   // Leave Duration Config
   const [allowedShortHalfday, setAllowedShortHalfday] = useState<{
     allow_half_day_leave: boolean;
     allow_short_leave: boolean;
   } | null>(null);
+  const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
+  const [selectedLeaveId, setSelectedLeaveId] = useState<number | string | null>(null);
 
   const [dayType, setDayType] = useState<string>('');
 
@@ -309,18 +277,6 @@ export const LeaveScreen: React.FC = () => {
     }
   };
 
-  // const renderFakeInput = (
-  //   label: string,
-  //   value: Date | null,
-  //   onPress: () => void,
-  // ) => (
-  //   <TouchableOpacity style={styles.input} onPress={onPress}>
-  //     <Text style={{ color: value ? '#000' : '#888' }}>
-  //       {value ? value.toLocaleDateString() : label}
-  //     </Text>
-  //   </TouchableOpacity>
-  // );
-
   const renderFakeInput = useCallback(
     (label: string, value: Date | null, onPress: () => void) => (
       <TouchableOpacity style={styles.input} onPress={onPress}>
@@ -357,30 +313,6 @@ export const LeaveScreen: React.FC = () => {
     dispatch(fetchUserNamesList({}));
   };
 
-  // const calculateTotalLeaveDays = () => {
-  //   if (!dayType || !startDate) return 0;
-
-  //   if (dayType === 'short') return 0.25;
-  //   if (dayType === 'half') return 0.5;
-  //   if (dayType === 'single') return 1;
-
-  //   if (dayType === 'multiple' && endDate) {
-  //     const start = moment(startDate).startOf('day');
-  //     const end = moment(endDate).startOf('day');
-  //     const diff = end.diff(start, 'days') + 1;
-
-  //     // Half-day adjustments
-  //     if (startHalf === 'second_half' && endHalf === 'first_half')
-  //       return diff - 1;
-  //     if (startHalf === 'second_half') return diff - 0.5;
-  //     if (endHalf === 'first_half') return diff - 0.5;
-
-  //     return diff;
-  //   }
-
-  //   return 0;
-  // };
-
   const calculateTotalLeaveDays = useCallback(() => {
     if (!dayType || !startDate) return 0;
 
@@ -404,13 +336,6 @@ export const LeaveScreen: React.FC = () => {
 
     return 0;
   }, [dayType, startDate, endDate, startHalf, endHalf]);
-
-  // const clubLeaveEnabled = () => {
-  //   if (dayType !== 'multiple') return false;
-  //   if (!multipleDay) return false;
-  //   if (!clubLeaveAllowed) return false;
-  //   return calculateTotalLeaveDays() > leaveRemainingLeaves;
-  // };
 
   const clubLeaveEnabled = useCallback(() => {
     if (dayType !== 'multiple') return false;
@@ -531,68 +456,6 @@ export const LeaveScreen: React.FC = () => {
     if (type === 'multiEnd') setEndDate(date);
   };
 
-  // const handleSubmit = () => {
-  //   const errors: Record<string, string> = {};
-
-  //   if (!subject.trim()) errors.subject = 'Subject is required.';
-  //   if (!selectedLeaveType) errors.leaveType = 'Leave Type is required.';
-  //   if (!dayType) errors.dayType = 'Leave Duration is required.';
-  //   if (!selectedName) errors.requestTo = 'Request To is required.';
-  //   if (!description.trim()) errors.description = 'Description is required.';
-
-  //   setFormErrors(errors);
-
-  //   if (Object.keys(errors).length === 0) {
-  //     const matched = userLeaveQuotaList?.leave_config?.filter(
-  //       (item: any) => item?.leave_type === selectedLeaveType,
-  //     );
-  //     const short_code = matched?.[0]?.leave_code || '';
-  //     const payload = {
-  //       subject,
-  //       leave_type: selectedLeaveType,
-  //       short_code: short_code,
-
-  //       // Dates
-  //       start_date: startDate ? moment(startDate).format('YYYY-MM-DD') : null,
-  //       end_date:
-  //         dayType === 'multiple' && endDate
-  //           ? moment(endDate).format('YYYY-MM-DD')
-  //           : moment(startDate).format('YYYY-MM-DD'),
-
-  //       // Halves
-  //       start_half: startHalf || 'first_half',
-  //       end_half: endHalf || 'second_half',
-
-  //       // Clubbing
-  //       clubing: clubing || '',
-  //       is_clubing: !!isClubChecked,
-
-  //       // Duration type
-  //       day_type: dayType,
-
-  //       // Reason
-  //       reason: reason === 'other' ? otherReason : reason,
-
-  //       description,
-  //       request_to: selectedName,
-  //     };
-
-  //     dispatch(createLeave({ payload, files: fileList }))
-  //       .unwrap()
-  //       .then(res => {
-  //         setSubject('');
-  //         setSelectedLeaveType('');
-  //         setDayType('');
-  //         setSelectedName('');
-  //         setDescription('');
-  //         setFileList([]);
-  //       })
-  //       .catch(err => {
-  //         console.error('Leave creation failed', err);
-  //       });
-  //   }
-  // };
-
   const handleSubmit = () => {
   const errors: Record<string, string> = {};
 
@@ -660,12 +523,10 @@ export const LeaveScreen: React.FC = () => {
       request_to: selectedName,
     };
 
-    console.log("📤 Payload:", payload);
 
     dispatch(createLeave({ payload, files: fileList }))
       .unwrap()
       .then((res) => {
-        console.log("✅ Leave created successfully", res);
         setSubject("");
         setSelectedLeaveType("");
         setDayType("");
@@ -676,19 +537,42 @@ export const LeaveScreen: React.FC = () => {
         setEndDate(null);
         setStartHalf("");
         setEndHalf("");
-        const payload = { current: 1, pageSize: 100, request_type: 'Admin' };
+        const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
         dispatch(fetchLeaves(payload) as any);
         setLeaveModalVisible(false);
       })
       .catch((err) => {
-        console.error("❌ Leave creation failed", err);
+        console.error("Leave creation failed", err);
       });
   }
 };
 
+const openWithdrawalModal = (id: number | string) => {
+  setSelectedLeaveId(id);
+  setWithdrawModalVisible(true);
+};
+
+const handleWithdraw = () => {
+  if (!selectedLeaveId) return;
+  dispatch(withdrawLeave({ leave_request_id: selectedLeaveId }))
+    .unwrap()
+    .then(res => {
+      if (res.success) {
+        console.log('Leave withdrawn successfully');
+      }
+      setWithdrawModalVisible(false);
+      const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
+      dispatch(fetchLeaves(payload) as any);
+    })
+    .catch(err => {
+      console.error('Withdraw failed', err);
+      setWithdrawModalVisible(false);
+    });
+};
+
 
   useEffect(() => {
-    const payload = { current: 1, pageSize: 100, request_type: 'Admin' };
+    const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
     dispatch(fetchLeaves(payload) as any);
   }, [dispatch]);
 
@@ -696,48 +580,11 @@ export const LeaveScreen: React.FC = () => {
     dispatch(fetchUserData());
   }, [dispatch]);
 
-  // useEffect(() => {
-  //   if (userData?.user_id) {
-  //     dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
-  //   }
-  // }, [dispatch, userData]);
-
   useEffect(() => {
     if (userData?.user_id) {
       dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
     }
   }, [userData?.user_id, dispatch]);
-
-  // useEffect(() => {
-  //   if (userLeaveQuotaList) {
-  //     const userGender = userData?.gender?.toLowerCase();
-  //     const userMaritalStatus = userData?.marital_status?.toLowerCase();
-
-  //     const leaveConfigs = userLeaveQuotaList?.leave_config || [];
-
-  //     const filteredLeaveTypes = leaveConfigs
-  //       .filter((item: any) => {
-  //         const genderMatch =
-  //           !item.gender?.length ||
-  //           item.gender
-  //             .map((g: string) => g.toLowerCase())
-  //             .includes(userGender);
-
-  //         const maritalMatch =
-  //           !item.marital_status?.length ||
-  //           item.marital_status
-  //             .map((m: string) => m.toLowerCase())
-  //             .includes(userMaritalStatus);
-
-  //         const isActive = item.status?.toLowerCase() !== 'inactive';
-  //         return genderMatch && maritalMatch && isActive;
-  //       })
-  //       .map((item: any) => item.leave_type)
-  //       .filter((type: string) => type.toLowerCase() !== 'lop');
-
-  //     setLeaveListOptions(filteredLeaveTypes);
-  //   }
-  // }, [userLeaveQuotaList, userData]);
 
   const leaveListOptions: string[] = useMemo(() => {
     if (!userLeaveQuotaList) return [];
@@ -856,7 +703,9 @@ export const LeaveScreen: React.FC = () => {
             <>
               {dayType === 'single' && (
                 <View style={styles.field}>
-                  <Text style={styles.label}>On <Text style={{ color: 'red' }}>*</Text></Text>
+                  <Text style={styles.label}>
+                    On <Text style={{ color: 'red' }}>*</Text>
+                  </Text>
                   {renderFakeInput('Select Date', startDate, () =>
                     setActivePicker('single'),
                   )}
@@ -871,7 +720,9 @@ export const LeaveScreen: React.FC = () => {
                 <View>
                   {/* From */}
                   <View style={styles.field}>
-                    <Text style={styles.label}>From <Text style={{ color: 'red' }}>*</Text></Text>
+                    <Text style={styles.label}>
+                      From <Text style={{ color: 'red' }}>*</Text>
+                    </Text>
                     {renderFakeInput('Select Start Date', startDate, () =>
                       setActivePicker('multiStart'),
                     )}
@@ -884,7 +735,9 @@ export const LeaveScreen: React.FC = () => {
 
                   {/* Start Half */}
                   <View style={styles.field}>
-                    <Text style={styles.label}>Select Half <Text style={{ color: 'red' }}>*</Text></Text>
+                    <Text style={styles.label}>
+                      Select Half <Text style={{ color: 'red' }}>*</Text>
+                    </Text>
                     <RNPickerSelect
                       onValueChange={val => setStartHalf(val)}
                       items={[
@@ -905,7 +758,9 @@ export const LeaveScreen: React.FC = () => {
 
                   {/* To */}
                   <View style={styles.field}>
-                    <Text style={styles.label}>To <Text style={{ color: 'red' }}>*</Text></Text>
+                    <Text style={styles.label}>
+                      To <Text style={{ color: 'red' }}>*</Text>
+                    </Text>
                     {renderFakeInput('Select End Date', endDate, () =>
                       setActivePicker('multiEnd'),
                     )}
@@ -916,7 +771,9 @@ export const LeaveScreen: React.FC = () => {
 
                   {/* End Half */}
                   <View style={styles.field}>
-                    <Text style={styles.label}>Select Half <Text style={{ color: 'red' }}>*</Text></Text>
+                    <Text style={styles.label}>
+                      Select Half <Text style={{ color: 'red' }}>*</Text>
+                    </Text>
                     <RNPickerSelect
                       onValueChange={val => setEndHalf(val)}
                       items={[
@@ -938,7 +795,9 @@ export const LeaveScreen: React.FC = () => {
               {/* Half/Short */}
               {(dayType === 'half' || dayType === 'short') && (
                 <View style={styles.field}>
-                  <Text style={styles.label}>On <Text style={{ color: 'red' }}>*</Text></Text>
+                  <Text style={styles.label}>
+                    On <Text style={{ color: 'red' }}>*</Text>
+                  </Text>
                   {renderFakeInput('Select Date', startDate, () =>
                     setActivePicker('halfShort'),
                   )}
@@ -1210,6 +1069,13 @@ export const LeaveScreen: React.FC = () => {
         </View>
       </AppModal>
 
+      <ConfirmationModal
+        visible={withdrawModalVisible}
+        message="Are you sure you want to withdraw this leave?"
+        onConfirm={handleWithdraw}
+        onCancel={() => setWithdrawModalVisible(false)}
+      />
+
       <SafeAreaView
         style={{ flex: 1, backgroundColor: '#f2f2f2' }}
         edges={['top', 'left', 'right']}
@@ -1247,41 +1113,11 @@ export const LeaveScreen: React.FC = () => {
         <FlatList
           ListHeaderComponent={
             <View style={styles.summaryContainer}>
-              {leaveSummaryData.map(leave => {
-                const progress = leave.consumed / leave.allocated;
-                return (
-                  <Card key={leave.id} style={styles.card}>
-                    <Text style={styles.cardTitle}>{leave.title}</Text>
-
-                    {/* Progress with overlay text */}
-                    <View style={styles.progressWrapper}>
-                      <ProgressCircle
-                        style={styles.progressCircle}
-                        progress={progress}
-                        progressColor={leave.color}
-                        backgroundColor="#eee"
-                        strokeWidth={14}
-                      />
-                      <View style={styles.progressTextContainer}>
-                        <Text style={styles.progressLabel}>Total Leaves</Text>
-                        <Text style={styles.progressValue}>
-                          {leave.allocated}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Meta details */}
-                    <Text style={styles.metaText}>
-                      Consumed{' '}
-                      <Text style={styles.boldText}>{leave.consumed} Days</Text>
-                    </Text>
-                    <Text style={styles.metaText}>
-                      Annual Quota{' '}
-                      <Text style={styles.boldText}>{leave.annual} Days</Text>
-                    </Text>
-                  </Card>
-                );
-              })}
+              {userLeaveQuotaList?.leave_config?.map(
+                (leave: any, index: number) => (
+                  <LeaveBalanceDonut key={index} data={leave} />
+                ),
+              )}
             </View>
           }
           data={leaveRequests}
@@ -1299,11 +1135,15 @@ export const LeaveScreen: React.FC = () => {
                 >
                   <Text style={styles.requestTitle}>{item?.subject}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => console.log('Open menu', item.id)}
-                >
-                  <MoreVertical size={18} color="#666" />
-                </TouchableOpacity>
+                {item?.status !== 'Withdrawn' &&
+                  item?.status !== 'Rejected' &&
+                  dayjs().isSameOrBefore(dayjs(item?.start_date), 'day') && (
+                    <TouchableOpacity
+                      onPress={() => openWithdrawalModal(item.id)}
+                    >
+                      <XCircleIcon size={22} color="#0E79B6" />
+                    </TouchableOpacity>
+                  )}
               </View>
 
               {/* Rows */}

@@ -230,6 +230,47 @@ export const createLeave = createAsyncThunk<
   }
 });
 
+export const withdrawLeave = createAsyncThunk<
+  { success: boolean; leave_request_id: string | number },
+  { leave_request_id: string | number },
+  { rejectValue: string }
+>('leaves/withdrawLeave', async ({ leave_request_id }, { rejectWithValue }) => {
+  try {
+    const encodedPayload = encodeData({ leave_request_id });
+    const response = await leaveService.withdrawLeave({
+      payload: encodedPayload,
+    });
+
+    // Normalize to always return { success, leave_request_id }
+    return { success: !!response.data?.success, leave_request_id };
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Failed to withdraw leave');
+  }
+});
+
+export const updateLeave = createAsyncThunk<
+  any,
+  { payload: any; files?: any[] },
+  { rejectValue: string }
+>('leaves/updateLeave', async ({ payload, files = [] }, { rejectWithValue }) => {
+  try {
+    const formData = new FormData();
+    formData.append('payload', encodeData(payload));
+
+    files.forEach(file => {
+      formData.append('file', {
+        uri: file.uri,
+        type: file.type || 'application/octet-stream',
+        name: file.fileName || `upload-${Date.now()}`,
+      } as any);
+    });
+
+    const response = await leaveService.updateLeave(formData);
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.message || 'Failed to update leave');
+  }
+});
 
 const leaveSlice = createSlice({
   name: 'leaves',
@@ -336,6 +377,28 @@ const leaveSlice = createSlice({
       .addCase(deleteLeaveComment.rejected, (state, action) => {
         state.isDetailLoading = false;
         state.error = action.payload || 'Failed to delete comment';
+      });
+
+    builder
+      .addCase(withdrawLeave.pending, state => {
+        state.isDetailLoading = true;
+      })
+      .addCase(withdrawLeave.fulfilled, (state, action) => {
+        state.isDetailLoading = false;
+
+        const payload = action.payload as {
+          success?: boolean;
+          leave_request_id?: string;
+        };
+        if (payload?.success && payload.leave_request_id) {
+          state.records = state.records.filter(
+            req => req.id !== payload.leave_request_id,
+          );
+        }
+      })
+      .addCase(withdrawLeave.rejected, (state, action) => {
+        state.isDetailLoading = false;
+        state.error = action.payload || 'Failed to withdraw leave';
       });
   },
 });
