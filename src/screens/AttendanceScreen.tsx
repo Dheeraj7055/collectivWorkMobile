@@ -263,15 +263,17 @@ export const AttendanceScreen: React.FC = () => {
             >
               <Text style={styles.punchText}>
                 {isCheckedIn
-                  ? `${
-                      todayRecord?.punch_type === 'remote'
-                        ? 'Remote '
-                        : todayRecord?.punch_type === 'web'
-                        ? 'Web '
-                        : todayRecord?.punch_type === 'open'
-                        ? 'Open '
-                        : ''
-                    }Punch Out`
+                  ? 
+                  // `${
+                  //     todayRecord?.punch_type === 'remote'
+                  //       ? 'Remote '
+                  //       : todayRecord?.punch_type === 'web'
+                  //       ? 'Web '
+                  //       : todayRecord?.punch_type === 'open'
+                  //       ? 'Open '
+                  //       : ''
+                  //   }Punch Out`
+                    'Punch Out'
                   : 'Punch In'}
               </Text>
             </TouchableOpacity>
