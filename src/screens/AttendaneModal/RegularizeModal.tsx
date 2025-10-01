@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import RNPickerSelect from 'react-native-picker-select';
@@ -32,182 +31,122 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 }) => {
   const userData = useSelector((state: RootState) => state.user.profile);
   const { names } = useSelector((state: RootState) => state.user);
-  const [attendanceDay, setAttendanceDay] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const [requestTo, setRequestTo] = useState<string | null>(null);
-  const [requestFor, setRequestFor] = useState<string | null>('');
-  const [captureMode, setCaptureMode] = useState<string | null>('');
-  const [timeIn, setTimeIn] = useState(new Date());
-  const [timeOut, setTimeOut] = useState(new Date());
+  // 👇 Single state object for form
+  const [form, setForm] = useState({
+    attendanceDay: new Date(),
+    selectedName: '',
+    requestTo: '',
+    requestFor: '',
+    captureMode: '',
+    timeIn: new Date(),
+    timeOut: new Date(),
+    reason: '',
+    otherReason: '',
+    description: '',
+  });
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showPunchOutPicker, setShowPunchOutPicker] = useState(false);
 
-  const [reason, setReason] = useState<string | null>(null);
-  const [description, setDescription] = useState('');
-  const [selectedName, setSelectedName] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [reasonList, setReasonList] = useState<
-    { label: string; value: string }[]
-  >([]);
-  const [otherReason, setOtherReason] = useState<string>('');
 
-  useEffect(() => {
-    if (userData?.AttendancePolicy) {
-      const userReasonList = userData?.AttendancePolicy?.regularization
-        ?.regularization_reason?.regularization_reason_required_enabled
-        ? userData.AttendancePolicy.regularization.regularization_reason.regularization_reasons.map(
-            (r: string) => ({
-              label: r,
-              value: r,
-            }),
-          )
-        : [];
+  // 🔹 Build reasonList only when userData or requestFor changes
+  const reasonList = useMemo(() => {
+    const apiReasonsEnabled =
+      userData?.AttendancePolicy?.regularization?.regularization_reason
+        ?.regularization_reason_required_enabled;
 
-      if (userReasonList.length > 0) {
-        // If reasons come from API, just append "Other"
-        setReasonList([...userReasonList, { label: 'Other', value: 'Other' }]);
-      } else {
-        // Build list dynamically based on requestFor
-        const baseReasons = [];
+    const reasonsFromAPI =
+      userData?.AttendancePolicy?.regularization?.regularization_reason
+        ?.regularization_reasons || [];
 
-        if (requestFor === 'Punch-In') {
-          baseReasons.push({
-            label: 'Forgot to punch-in',
-            value: 'Forgot to punch-in',
-          });
-        }
-        if (requestFor === 'Punch-Out') {
-          baseReasons.push({
-            label: 'Forgot to punch-out',
-            value: 'Forgot to punch-out',
-          });
-        }
-        if (requestFor === 'Both') {
-          baseReasons.push({
-            label: 'Forgot to punch-in and punch-out',
-            value: 'Forgot to punch-in and punch-out',
-          });
-        }
+    const base: { label: string; value: string }[] = [];
 
-        baseReasons.push(
-          { label: 'Network issue', value: 'Network issue' },
-          { label: 'Other', value: 'Other' },
-        );
-
-        setReasonList(baseReasons);
-      }
+    // 🔹 Add conditional static reasons
+    if (form.requestFor === 'Punch-In') {
+      base.push({ label: 'Forgot to punch-in', value: 'Forgot to punch-in' });
     }
-  }, [userData, requestFor]);
+    if (form.requestFor === 'Punch-Out') {
+      base.push({ label: 'Forgot to punch-out', value: 'Forgot to punch-out' });
+    }
+    if (form.requestFor === 'Both') {
+      base.push({
+        label: 'Forgot to punch-in and punch-out',
+        value: 'Forgot to punch-in and punch-out',
+      });
+    }
 
-  // const handleSubmit = () => {
-  //   onSubmit({
-  //     attendanceDay,
-  //     requestTo,
-  //     requestFor,
-  //     captureMode,
-  //     timeIn,
-  //     timeOut,
-  //     reason,
-  //     description,
-  //   });
-  //   onClose();
-  // };
+    base.push(
+      { label: 'Network issue', value: 'Network issue' },
+      { label: 'Other', value: 'Other' },
+    );
 
-  // const handleSubmit = () => {
-  //   const errors: Record<string, string> = {};
+    // 🔹 If API reasons are enabled, merge them + base
+    if (apiReasonsEnabled) {
+      return [
+        ...reasonsFromAPI.map((r: string) => ({ label: r, value: r })),
+        ...base,
+      ];
+    }
 
-  //   // Attendance Day
-  //   if (!attendanceDay) {
-  //     errors.attendanceDay = 'Attendance day is required.';
-  //   }
+    return base;
+  }, [userData, form.requestFor]);
 
-  //   // Request To
-  //   if (!selectedName) {
-  //     errors.selectedName = 'Request to is required.';
-  //   }
+  // 🔹 Memoized helper for updating form fields
+  const updateForm = useCallback(
+    (field: string, value: any) => {
+      setForm(prev => ({ ...prev, [field]: value }));
+      if (formErrors[field]) {
+        setFormErrors(prev => {
+          const { [field]: removed, ...rest } = prev;
+          return rest;
+        });
+      }
+    },
+    [formErrors],
+  );
 
-  //   // Request For
-  //   if (!requestFor) {
-  //     errors.requestFor = 'Request for is required.';
-  //   }
-
-  //   // Capture Mode
-  //   if (!captureMode) {
-  //     errors.captureMode = 'Capture mode is required.';
-  //   }
-
-  //   // Punch-In validation
-  //   if ((requestFor === 'Punch-In' || requestFor === 'Both') && !timeIn) {
-  //     errors.timeIn = 'Punch-In time is required.';
-  //   }
-
-  //   // Punch-Out validation
-  //   if ((requestFor === 'Punch-Out' || requestFor === 'Both') && !timeOut) {
-  //     errors.timeOut = 'Punch-Out time is required.';
-  //   }
-
-  //   // Reason validation
-  //   if (!reason) {
-  //     errors.reason = 'Reason is required.';
-  //   }
-
-  //   // Conditional Other Reason
-  //   if (reason === 'Other' && !otherReason.trim()) {
-  //     errors.otherReason = 'Other reason is required.';
-  //   }
-
-  //   setFormErrors(errors);
-
-  //   if (Object.keys(errors).length > 0) {
-  //     return; // Stop if errors
-  //   }
-
-  //   // Submit logic here
-  //   console.log('Form Submitted Successfully');
-  //   onSubmit({
-  //     attendanceDay,
-  //     requestTo,
-  //     requestFor,
-  //     captureMode,
-  //     timeIn,
-  //     timeOut,
-  //     reason,
-  //     description,
-  //   });
-  //   onClose();
-  // };
-
-  const resetAllState = () => {
-    setAttendanceDay(new Date());
-    setSelectedName('');
-    setRequestFor('');
-    setCaptureMode('');
-    setTimeIn(new Date());
-    setTimeOut(new Date());
-    setReason('');
-    setOtherReason('');
-    setDescription('');
+  // 🔹 Reset all
+  const resetAllState = useCallback(() => {
+    setForm({
+      attendanceDay: new Date(),
+      requestTo: '',
+      selectedName: '',
+      requestFor: '',
+      captureMode: '',
+      timeIn: new Date(),
+      timeOut: new Date(),
+      reason: '',
+      otherReason: '',
+      description: '',
+    });
     setFormErrors({});
-  };
+  }, []);
 
   const handleSubmit = async () => {
     const errors: Record<string, string> = {};
-
-    // === VALIDATION ===
-    if (!attendanceDay) errors.attendanceDay = 'Attendance day is required.';
-    if (!selectedName) errors.selectedName = 'Request to is required.';
-    if (!requestFor) errors.requestFor = 'Request for is required.';
-    if (!captureMode) errors.captureMode = 'Capture mode is required.';
-    if ((requestFor === 'Punch-In' || requestFor === 'Both') && !timeIn) {
+    if (!form.attendanceDay)
+      errors.attendanceDay = 'Attendance day is required.';
+    if (!form.selectedName) errors.selectedName = 'Request to is required.';
+    if (!form.requestFor) errors.requestFor = 'Request for is required.';
+    if (!form.captureMode) errors.captureMode = 'Capture mode is required.';
+    if (
+      (form.requestFor === 'Punch-In' || form.requestFor === 'Both') &&
+      !form.timeIn
+    ) {
       errors.timeIn = 'Punch-In time is required.';
     }
-    if ((requestFor === 'Punch-Out' || requestFor === 'Both') && !timeOut) {
+    if (
+      (form.requestFor === 'Punch-Out' || form.requestFor === 'Both') &&
+      !form.timeOut
+    ) {
       errors.timeOut = 'Punch-Out time is required.';
     }
-    if (!reason) errors.reason = 'Reason is required.';
-    if (reason === 'Other' && !otherReason.trim()) {
+    if (!form.reason) errors.reason = 'Reason is required.';
+    if (form.reason === 'Other' && !form.otherReason.trim()) {
       errors.otherReason = 'Other reason is required.';
     }
 
@@ -219,29 +158,28 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 
       const payload = encodeData({
         user_id: userData?.user_id,
-        request_date: attendanceDay,
+        request_date: form.attendanceDay,
         check_in:
-          requestFor === 'Punch-In' || requestFor === 'Both'
-            ? timeIn.toISOString()
+          form.requestFor === 'Punch-In' || form.requestFor === 'Both'
+            ? form.timeIn.toISOString()
             : null,
         check_out:
-          requestFor === 'Punch-Out' || requestFor === 'Both'
-            ? timeOut.toISOString()
+          form.requestFor === 'Punch-Out' || form.requestFor === 'Both'
+            ? form.timeOut.toISOString()
             : null,
-        capture_mode: captureMode,
-        request_to: selectedName,
-        reason: reason === 'Other' ? otherReason : reason,
-        description,
-        status_updated_by: selectedName,
-        request_for: requestFor === 'Punch-Out'
+        capture_mode: form.captureMode,
+        request_to: form.requestTo,
+        reason: form.reason === 'Other' ? form.otherReason : form.reason,
+        description: form.description,
+        status_updated_by: form.requestTo,
+        request_for:
+          form.requestFor === 'Punch-Out'
             ? 'checkOut'
-            : requestFor === 'Punch-In'
+            : form.requestFor === 'Punch-In'
             ? 'checkIn'
-            : 'both'
+            : 'both',
       });
 
-
-      // === API CALL ===
       const res = await attendanceService.raiseAttendanceRequest({ payload });
       if (res.success) {
         Toast.show({
@@ -305,313 +243,61 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
     });
   };
 
+  useEffect(() => {
+    updateForm('reason', '');
+  }, [form.requestFor]);
+
   return (
-    // <AppModal visible={visible} onClose={onClose}>
-    //   <ScrollView style={{ maxHeight: 600 }} showsVerticalScrollIndicator>
-    //     <View style={styles.iconGeneralCircle}>
-    //       <Edit2 size="20" color="#0E79B6" />
-    //     </View>
-    //     <Text
-    //       style={{
-    //         fontSize: 18,
-    //         fontWeight: '700',
-    //         marginBottom: 10,
-    //         marginTop: 8,
-    //       }}
-    //     >
-    //       Regularize
-    //     </Text>
-    //     <Text style={{ color: '#666', marginBottom: 16 }}>
-    //       Please fill out the details below to regularize your attendance.
-    //     </Text>
-
-    //     {/* Attendance Day */}
-    //     <Text style={{ marginBottom: 6 }}>
-    //       Attendance Day <Text style={{ color: 'red' }}>*</Text>
-    //     </Text>
-    //     <TouchableOpacity
-    //       style={{
-    //         padding: 12,
-    //         borderWidth: 1,
-    //         borderColor: '#ccc',
-    //         borderRadius: 6,
-    //         marginBottom: 12,
-    //       }}
-    //       onPress={() => setShowDatePicker(true)}
-    //     >
-    //       <Text>{attendanceDay.toLocaleDateString('en-GB')}</Text>
-    //     </TouchableOpacity>
-    //     {formErrors.attendanceDay && (
-    //       <Text style={styles.errorText}>{formErrors.attendanceDay}</Text>
-    //     )}
-    //     {showDatePicker && (
-    //       <DateTimePicker
-    //         value={attendanceDay}
-    //         mode="date"
-    //         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-    //         onChange={(event, selectedDate) => {
-    //           setShowDatePicker(false);
-    //           if (selectedDate) setAttendanceDay(selectedDate);
-    //         }}
-    //       />
-    //     )}
-
-    //     {/* Request To */}
-    //     <Text style={{ marginBottom: 6, marginTop: 6 }}>
-    //       Request To <Text style={{ color: 'red' }}>*</Text>
-    //     </Text>
-    //     <RNPickerSelect
-    //       onValueChange={setSelectedName}
-    //       items={renderUserOptions(userData, names)}
-    //       value={selectedName}
-    //       placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
-    //       style={pickerSelectStyles}
-    //       useNativeAndroidPickerStyle={false}
-    //     />
-    //     {formErrors.selectedName && (
-    //       <Text style={styles.errorText}>{formErrors.selectedName}</Text>
-    //     )}
-
-    //     {/* Request For */}
-    //     <Text style={{ marginVertical: 6 }}>
-    //       Request For <Text style={{ color: 'red' }}>*</Text>
-    //     </Text>
-    //     <RNPickerSelect
-    //       onValueChange={value => setRequestFor(value)}
-    //       items={[
-    //         { label: 'Punch-In', value: 'Punch-In' },
-    //         { label: 'Punch-Out', value: 'Punch-Out' },
-    //         { label: 'Both', value: 'Both' },
-    //       ]}
-    //       style={pickerSelectStyles}
-    //       value={requestFor}
-    //       useNativeAndroidPickerStyle={false}
-    //     />
-
-    //     <Text style={{ marginVertical: 6 }}>
-    //       Capture Mode <Text style={{ color: 'red' }}>*</Text>
-    //     </Text>
-    //     <RNPickerSelect
-    //       onValueChange={value => setCaptureMode(value)}
-    //       items={[
-    //         { label: 'Web', value: 'Web' },
-    //         { label: 'Remote', value: 'Remote' },
-    //       ]}
-    //       style={pickerSelectStyles}
-    //       value={captureMode}
-    //       useNativeAndroidPickerStyle={false}
-    //     />
-
-    //     {/* Punch-In Time (only if Punch-In or Both) */}
-    //     {(requestFor === 'Punch-In' || requestFor === 'Both') && (
-    //       <>
-    //         <Text style={{ marginBottom: 6, marginTop: 6 }}>
-    //           Punch-in <Text style={{ color: 'red' }}>*</Text>
-    //         </Text>
-    //         <TouchableOpacity
-    //           style={{
-    //             padding: 12,
-    //             borderWidth: 1,
-    //             borderColor: '#ccc',
-    //             borderRadius: 6,
-    //             marginBottom: 12,
-    //           }}
-    //           onPress={() => setShowTimePicker(true)}
-    //         >
-    //           <Text>
-    //             {timeIn.toLocaleTimeString([], {
-    //               hour: '2-digit',
-    //               minute: '2-digit',
-    //               hour12: true,
-    //             })}
-    //           </Text>
-    //         </TouchableOpacity>
-    //         {showTimePicker && (
-    //           <DateTimePicker
-    //             value={timeIn}
-    //             mode="time"
-    //             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-    //             onChange={(event, selectedTime) => {
-    //               setShowTimePicker(false);
-    //               if (selectedTime) setTimeIn(selectedTime);
-    //             }}
-    //           />
-    //         )}
-    //       </>
-    //     )}
-
-    //     {/* Punch-Out Time (only if Punch-Out or Both) */}
-    //     {(requestFor === 'Punch-Out' || requestFor === 'Both') && (
-    //       <>
-    //         <Text style={{ marginBottom: 6, marginTop: 6 }}>
-    //           Punch-out <Text style={{ color: 'red' }}>*</Text>
-    //         </Text>
-    //         <TouchableOpacity
-    //           style={{
-    //             padding: 12,
-    //             borderWidth: 1,
-    //             borderColor: '#ccc',
-    //             borderRadius: 6,
-    //             marginBottom: 12,
-    //           }}
-    //           onPress={() => setShowPunchOutPicker(true)}
-    //         >
-    //           <Text>
-    //             {timeOut.toLocaleTimeString([], {
-    //               hour: '2-digit',
-    //               minute: '2-digit',
-    //               hour12: true,
-    //             })}
-    //           </Text>
-    //         </TouchableOpacity>
-    //         {showPunchOutPicker && (
-    //           <DateTimePicker
-    //             value={timeOut}
-    //             mode="time"
-    //             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-    //             onChange={(event, selectedTime) => {
-    //               setShowPunchOutPicker(false);
-    //               if (selectedTime) setTimeOut(selectedTime);
-    //             }}
-    //           />
-    //         )}
-    //       </>
-    //     )}
-
-    //     {/* Reason */}
-    //     <View style={{ marginBottom: 6, marginTop: 6 }}>
-    //       {/* Label */}
-    //       <Text style={{ marginBottom: 6 }}>
-    //         Reason <Text style={{ color: 'red' }}>*</Text>
-    //       </Text>
-
-    //       {/* Dropdown */}
-    //       <RNPickerSelect
-    //         onValueChange={value => setReason(value)}
-    //         items={reasonList}
-    //         value={reason}
-    //         style={pickerSelectStyles}
-    //         placeholder={{ label: 'Select Reason', value: null }}
-    //         useNativeAndroidPickerStyle={false}
-    //       />
-
-    //       {/* Conditionally show text input if Other is selected */}
-    //       {reason === 'Other' && (
-    //         <>
-    //           <Text style={{ marginBottom: 6, marginTop: 12 }}>
-    //             Other Reason <Text style={{ color: 'red' }}>*</Text>
-    //           </Text>
-    //           <TextInput
-    //             value={otherReason}
-    //             onChangeText={setOtherReason}
-    //             placeholder="Enter other reason (Max. 50 characters)"
-    //             maxLength={50}
-    //             style={{
-    //               borderWidth: 1,
-    //               borderColor: '#ccc',
-    //               borderRadius: 6,
-    //               padding: 12,
-    //               marginBottom: 12,
-    //             }}
-    //           />
-    //         </>
-    //       )}
-    //     </View>
-
-    //     {/* Description */}
-    //     <Text style={{ marginBottom: 6, marginTop: 6 }}>Description</Text>
-    //     <TextInput
-    //       placeholder="Enter Description"
-    //       value={description}
-    //       onChangeText={setDescription}
-    //       multiline
-    //       style={{
-    //         borderWidth: 1,
-    //         borderColor: '#ccc',
-    //         borderRadius: 6,
-    //         padding: 10,
-    //         height: 80,
-    //         textAlignVertical: 'top',
-    //       }}
-    //     />
-
-    //     {/* Submit Button */}
-    //     <TouchableOpacity
-    //       style={{
-    //         backgroundColor: '#0E79B6',
-    //         padding: 12,
-    //         borderRadius: 8,
-    //         alignItems: 'center',
-    //         marginTop: 16,
-    //       }}
-    //       onPress={handleSubmit}
-    //     >
-    //       <Text style={{ color: '#fff', fontWeight: '600' }}>Submit</Text>
-    //     </TouchableOpacity>
-    //   </ScrollView>
-    // </AppModal>
     <AppModal visible={visible} onClose={onClose}>
       <ScrollView style={{ maxHeight: 600 }} showsVerticalScrollIndicator>
         <View style={styles.iconGeneralCircle}>
           <Edit2 size="20" color="#0E79B6" />
         </View>
 
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: '700',
-            marginBottom: 10,
-            marginTop: 8,
-          }}
-        >
-          Regularize
-        </Text>
-        <Text style={{ color: '#666', marginBottom: 16 }}>
+        <Text style={styles.heading}>Regularize</Text>
+        <Text style={styles.subheading}>
           Please fill out the details below to regularize your attendance.
         </Text>
 
         {/* Attendance Day */}
-        <View style={{ marginBottom: 12 }}>
+        <View style={styles.field}>
           <Text>
             Attendance Day <Text style={{ color: 'red' }}>*</Text>
           </Text>
           <TouchableOpacity
-            style={{
-              padding: 12,
-              borderWidth: 1,
-              borderColor: '#ccc',
-              borderRadius: 6,
-              marginTop: 6,
+            style={styles.inputBox}
+            onPress={() => {
+              setShowDatePicker(true);
+              updateForm('attendanceDay', form.attendanceDay);
             }}
-            onPress={() => setShowDatePicker(true)}
           >
-            <Text>{attendanceDay.toLocaleDateString('en-GB')}</Text>
+            <Text>{form.attendanceDay.toLocaleDateString('en-GB')}</Text>
           </TouchableOpacity>
           {formErrors.attendanceDay && (
             <Text style={styles.errorText}>{formErrors.attendanceDay}</Text>
           )}
           {showDatePicker && (
             <DateTimePicker
-              value={attendanceDay}
+              value={form.attendanceDay}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
                 setShowDatePicker(false);
-                if (selectedDate) setAttendanceDay(selectedDate);
+                if (selectedDate) updateForm('attendanceDay', selectedDate);
               }}
             />
           )}
         </View>
 
         {/* Request To */}
-        <View style={{ marginBottom: 12 }}>
+        <View style={styles.field}>
           <Text>
             Request To <Text style={{ color: 'red' }}>*</Text>
           </Text>
           <RNPickerSelect
-            onValueChange={setSelectedName}
+            onValueChange={value => updateForm('selectedName', value)}
             items={renderUserOptions(userData, names)}
-            value={selectedName}
+            value={form.selectedName}
             placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
             style={pickerSelectStyles}
             useNativeAndroidPickerStyle={false}
@@ -622,19 +308,19 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         </View>
 
         {/* Request For */}
-        <View style={{ marginBottom: 12 }}>
+        <View style={styles.field}>
           <Text>
             Request For <Text style={{ color: 'red' }}>*</Text>
           </Text>
           <RNPickerSelect
-            onValueChange={value => setRequestFor(value)}
+            onValueChange={value => updateForm('requestFor', value)}
             items={[
               { label: 'Punch-In', value: 'Punch-In' },
               { label: 'Punch-Out', value: 'Punch-Out' },
               { label: 'Both', value: 'Both' },
             ]}
             style={pickerSelectStyles}
-            value={requestFor}
+            value={form.requestFor}
             useNativeAndroidPickerStyle={false}
           />
           {formErrors.requestFor && (
@@ -643,18 +329,18 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         </View>
 
         {/* Capture Mode */}
-        <View style={{ marginBottom: 12 }}>
+        <View style={styles.field}>
           <Text>
             Capture Mode <Text style={{ color: 'red' }}>*</Text>
           </Text>
           <RNPickerSelect
-            onValueChange={value => setCaptureMode(value)}
+            onValueChange={value => updateForm('captureMode', value)}
             items={[
               { label: 'Web', value: 'Web' },
               { label: 'Remote', value: 'Remote' },
             ]}
             style={pickerSelectStyles}
-            value={captureMode}
+            value={form.captureMode}
             useNativeAndroidPickerStyle={false}
           />
           {formErrors.captureMode && (
@@ -663,23 +349,17 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         </View>
 
         {/* Punch-In Time */}
-        {(requestFor === 'Punch-In' || requestFor === 'Both') && (
-          <View style={{ marginBottom: 12 }}>
+        {(form.requestFor === 'Punch-In' || form.requestFor === 'Both') && (
+          <View style={styles.field}>
             <Text>
               Punch-in <Text style={{ color: 'red' }}>*</Text>
             </Text>
             <TouchableOpacity
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: 6,
-                marginTop: 6,
-              }}
+              style={styles.inputBox}
               onPress={() => setShowTimePicker(true)}
             >
               <Text>
-                {timeIn.toLocaleTimeString([], {
+                {form.timeIn.toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                   hour12: true,
@@ -691,12 +371,12 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             )}
             {showTimePicker && (
               <DateTimePicker
-                value={timeIn}
+                value={form.timeIn}
                 mode="time"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={(event, selectedTime) => {
                   setShowTimePicker(false);
-                  if (selectedTime) setTimeIn(selectedTime);
+                  if (selectedTime) updateForm('timeIn', selectedTime);
                 }}
               />
             )}
@@ -704,23 +384,17 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         )}
 
         {/* Punch-Out Time */}
-        {(requestFor === 'Punch-Out' || requestFor === 'Both') && (
-          <View style={{ marginBottom: 12 }}>
+        {(form.requestFor === 'Punch-Out' || form.requestFor === 'Both') && (
+          <View style={styles.field}>
             <Text>
               Punch-out <Text style={{ color: 'red' }}>*</Text>
             </Text>
             <TouchableOpacity
-              style={{
-                padding: 12,
-                borderWidth: 1,
-                borderColor: '#ccc',
-                borderRadius: 6,
-                marginTop: 6,
-              }}
+              style={styles.inputBox}
               onPress={() => setShowPunchOutPicker(true)}
             >
               <Text>
-                {timeOut.toLocaleTimeString([], {
+                {form.timeOut.toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
                   hour12: true,
@@ -732,12 +406,12 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             )}
             {showPunchOutPicker && (
               <DateTimePicker
-                value={timeOut}
+                value={form.timeOut}
                 mode="time"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={(event, selectedTime) => {
                   setShowPunchOutPicker(false);
-                  if (selectedTime) setTimeOut(selectedTime);
+                  if (selectedTime) updateForm('timeOut', selectedTime);
                 }}
               />
             )}
@@ -745,14 +419,14 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         )}
 
         {/* Reason */}
-        <View style={{ marginBottom: 12 }}>
+        <View style={styles.field}>
           <Text>
             Reason <Text style={{ color: 'red' }}>*</Text>
           </Text>
           <RNPickerSelect
-            onValueChange={value => setReason(value)}
+            onValueChange={value => updateForm('reason', value)}
             items={reasonList}
-            value={reason}
+            value={form.reason}
             style={pickerSelectStyles}
             placeholder={{ label: 'Select Reason', value: null }}
             useNativeAndroidPickerStyle={false}
@@ -761,23 +435,17 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             <Text style={styles.errorText}>{formErrors.reason}</Text>
           )}
 
-          {reason === 'Other' && (
-            <View style={{ marginTop: 8 }}>
+          {form.reason === 'Other' && (
+            <View style={{ marginTop: 12 }}>
               <Text>
                 Other Reason <Text style={{ color: 'red' }}>*</Text>
               </Text>
               <TextInput
-                value={otherReason}
-                onChangeText={setOtherReason}
+                value={form.otherReason}
+                onChangeText={text => updateForm('otherReason', text)}
                 placeholder="Enter other reason (Max. 50 characters)"
                 maxLength={50}
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#ccc',
-                  borderRadius: 6,
-                  padding: 12,
-                  marginTop: 6,
-                }}
+                style={styles.inputBox}
               />
               {formErrors.otherReason && (
                 <Text style={styles.errorText}>{formErrors.otherReason}</Text>
@@ -787,37 +455,26 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         </View>
 
         {/* Description */}
-        <View style={{ marginBottom: 12 }}>
+        <View style={styles.field}>
           <Text>Description</Text>
           <TextInput
             placeholder="Enter Description"
-            value={description}
-            onChangeText={setDescription}
+            value={form.description}
+            onChangeText={text => updateForm('description', text)}
             multiline
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              borderRadius: 6,
-              padding: 10,
-              height: 80,
-              textAlignVertical: 'top',
-              marginTop: 6,
-            }}
+            style={styles.textArea}
           />
         </View>
 
         {/* Submit Button */}
         <TouchableOpacity
-          style={{
-            backgroundColor: '#0E79B6',
-            padding: 12,
-            borderRadius: 8,
-            alignItems: 'center',
-            marginTop: 16,
-          }}
+          style={styles.submitBtn}
           onPress={handleSubmit}
+          disabled={loading}
         >
-          <Text style={{ color: '#fff', fontWeight: '600' }}>Submit</Text>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>
+            {loading ? 'Submitting...' : 'Submit'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </AppModal>
@@ -836,9 +493,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  errorText: {
-    color: '#E02D3C',
-    fontSize: 12,
+  heading: { fontSize: 18, fontWeight: '700', marginBottom: 10, marginTop: 8 },
+  subheading: { color: '#666', marginBottom: 16 },
+  field: { marginBottom: 12 },
+  inputBox: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  errorText: { color: '#E02D3C', fontSize: 12 },
+  submitBtn: {
+    backgroundColor: '#0E79B6',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 10,
+    height: 80,
+    textAlignVertical: 'top',
+    marginTop: 6,
   },
 });
 

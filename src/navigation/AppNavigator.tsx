@@ -26,7 +26,7 @@ export type MainTabParamList = {
   Post: undefined;
   Chat: undefined;
   Attendance: undefined;
-  Leave: undefined;
+  Leave: { openModal?: boolean }; 
   Profile: undefined;
 };
 

@@ -43,6 +43,11 @@ import RegularizeModal from './AttendaneModal/RegularizeModal';
 import { styles } from '@/styles/attendanceStyles';
 import { debounce } from 'lodash';
 import { fetchUserNamesList } from '@/redux/slices/userSlice';
+import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { MainTabParamList } from '@/navigation/AppNavigator';
+
+type LeaveNavProp = BottomTabNavigationProp<MainTabParamList, 'Leave'>;
 
 interface DayLog {
   punch_in: string | null;
@@ -54,6 +59,7 @@ export const AttendanceScreen: React.FC = () => {
     new Date().toISOString().split('T')[0],
   );
   const dispatch = useDispatch<AppDispatch>();
+  const navigation = useNavigation<LeaveNavProp>();
   const { todayRecord, monthlyRecords, holidayList, isLoading } = useSelector(
     (state: RootState) => state.attendance,
   );
@@ -486,7 +492,10 @@ export const AttendanceScreen: React.FC = () => {
                 <Edit2 size={16} color="#0E79B6" />
                 <Text style={styles.link}> Regularize</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionRow}>
+              <TouchableOpacity 
+                style={styles.actionRow}
+                onPress={() => navigation.navigate('Leave', { openModal: true })}
+              >
                 <CalendarIcon size={16} color="#0E79B6" />
                 <Text style={styles.link}> Apply Leave</Text>
               </TouchableOpacity>

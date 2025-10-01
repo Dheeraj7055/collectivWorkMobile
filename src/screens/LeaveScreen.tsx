@@ -29,13 +29,16 @@ import AppModal from '@/common/AppModal';
 import RNPickerSelect from 'react-native-picker-select';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { useNavigation } from '@react-navigation/native';
-import { AppStackParamList } from '@/navigation/AppNavigator';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { AppStackParamList, MainTabParamList } from '@/navigation/AppNavigator';
 import { StackNavigationProp } from '@react-navigation/stack';
 import LeaveBalanceDonut from '@/components/LeaveBalanceDonut';
 import ConfirmationModal from '@/common/ConfirmationModal';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+
+type LeaveScreenRoute = RouteProp<MainTabParamList, 'Leave'>;
 
 interface LeaveSummary {
   id: string;
@@ -71,6 +74,7 @@ export const LeaveScreen: React.FC = () => {
   const navigation = useNavigation<LeaveScreenNavProp>();
   // Request To dropdown
   const [selectedName, setSelectedName] = useState<string>('');
+  const route = useRoute<LeaveScreenRoute>();
   const [activePicker, setActivePicker] = useState<
     null | "single" | "multiStart" | "multiEnd" | "halfShort"
   >(null);
@@ -585,6 +589,13 @@ const handleWithdraw = () => {
       dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
     }
   }, [userData?.user_id, dispatch]);
+
+  useEffect(() => {
+    if (route.params?.openModal) {
+      setLeaveModalVisible(true);
+      dispatch(fetchUserNamesList({}));
+    }
+  }, [route.params?.openModal, dispatch]);
 
   const leaveListOptions: string[] = useMemo(() => {
     if (!userLeaveQuotaList) return [];
