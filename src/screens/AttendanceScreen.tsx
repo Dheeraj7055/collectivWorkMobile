@@ -155,7 +155,7 @@ export const AttendanceScreen: React.FC = () => {
   }, [todayRecord]);
 
   const handlePunchIn = (type: string) => {
-    dispatch(punchIn({ punch_type: 'remote' }));
+    dispatch(punchIn({ punch_type: type }));
     dispatch(fetchAttendance());
     handleFetchDetailByDate(currentDate);
     setShowAndroidMenu(false);

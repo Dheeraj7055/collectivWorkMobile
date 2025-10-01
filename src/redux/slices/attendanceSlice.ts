@@ -2,6 +2,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { attendanceService } from '@/services/attendanceService';
 import { encodeData } from '@/utils/cryptoHelpers';
+import { RootState } from '../store';
 
 export interface AttendanceActivity {
   id: string | number;
@@ -92,22 +93,48 @@ export const fetchAttendance = createAsyncThunk<
   }
 });
 
+// export const punchIn = createAsyncThunk<
+//   AttendanceRecord,
+//   { punch_type?: string },
+//   { rejectValue: string }
+// >('attendance/punchIn', async ({ punch_type }, { rejectWithValue }) => {
+//   try {
+//     const payload = encodeData({
+//       punch_in_location: 'remote',
+//       punch_type: punch_type || 'remote',
+//     });
+//     const res = await attendanceService.punchIn({ payload });
+//     return res.data as AttendanceRecord;
+//   } catch (err: any) {
+//     return rejectWithValue(err.message || 'Punch in failed');
+//   }
+// });
+
 export const punchIn = createAsyncThunk<
   AttendanceRecord,
   { punch_type?: string },
-  { rejectValue: string }
->('attendance/punchIn', async ({ punch_type }, { rejectWithValue }) => {
+  { rejectValue: string; state: RootState }
+>('attendance/punchIn', async ({ punch_type }, { rejectWithValue, getState }) => {
   try {
+    const { location } = getState();
+    const { latitude, longitude, address } = location;
+
     const payload = encodeData({
-      punch_in_location: 'remote',
+      punch_in_location: address || 'Unknown Location',
       punch_type: punch_type || 'remote',
+      userLocation: {
+        latitude,
+        longitude,
+      },
     });
+
     const res = await attendanceService.punchIn({ payload });
     return res.data as AttendanceRecord;
   } catch (err: any) {
     return rejectWithValue(err.message || 'Punch in failed');
   }
 });
+
 
 export const punchOut = createAsyncThunk<
   AttendanceRecord,
