@@ -4,7 +4,7 @@ import {
   StackScreenProps,
 } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, Image, View } from 'react-native';
+import { Text, Image, View, StatusBar } from 'react-native';
 import {
   getFocusedRouteNameFromRoute,
   RouteProp,
@@ -19,6 +19,7 @@ import { BookmarkScreen } from '@/screens/BookmarkScreen';
 import { LeaveRequestDetailScreen } from '@/screens/LeaveRequestDetailScreen';
 import { Header } from '@/components/Header';
 import useLiveLocation from '@/hooks/useLiveLocation';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ChatScreen = () => <Text>Chat Screen</Text>;
 
@@ -71,10 +72,11 @@ export const ScreenWithHeader = ({
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <Header title={titleMap[routeName] || routeName} />
       {children}
-    </View>
+    </SafeAreaView>
   );
 };
 

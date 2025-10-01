@@ -1087,9 +1087,8 @@ const handleWithdraw = () => {
         onCancel={() => setWithdrawModalVisible(false)}
       />
 
-      <SafeAreaView
+      <View
         style={{ flex: 1, backgroundColor: '#f2f2f2' }}
-        edges={['top', 'left', 'right']}
       >
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
@@ -1227,7 +1226,7 @@ const handleWithdraw = () => {
             </Card>
           )}
         />
-      </SafeAreaView>
+      </View>
     </>
   );
 };

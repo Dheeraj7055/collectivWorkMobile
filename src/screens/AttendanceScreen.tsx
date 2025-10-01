@@ -247,7 +247,7 @@ export const AttendanceScreen: React.FC = () => {
         onClose={() => setShowRegularizeModal(false)}
         onSubmit={handleRegularizeSubmit}
       />
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <ScrollView
           showsVerticalScrollIndicator={false}
         >
@@ -693,7 +693,7 @@ export const AttendanceScreen: React.FC = () => {
             )}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </>
   );
 };

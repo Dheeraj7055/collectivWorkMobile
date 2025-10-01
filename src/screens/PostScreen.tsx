@@ -479,9 +479,8 @@ const handleCreate = async () => {
 
 
   return (
-    <SafeAreaView
+    <View
       style={{ flex: 1, backgroundColor: '#f2f2f2' }}
-      edges={['top', 'left', 'right']}
     >
       {/* Search + Buttons */}
       <View style={styles.searchRow}>
@@ -972,6 +971,6 @@ const handleCreate = async () => {
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => <PostCard announcement={item} />}
       />
-    </SafeAreaView>
+    </View>
   );
 };
