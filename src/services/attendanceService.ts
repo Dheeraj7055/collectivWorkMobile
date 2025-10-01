@@ -1,5 +1,5 @@
-import { apiClient } from "./api";
-import { API_ROUTES } from "@/constants/apiRoutes";
+import { apiClient } from './api';
+import { API_ROUTES } from '@/constants/apiRoutes';
 
 export const attendanceService = {
   // Fetch attendance details for a given date
@@ -13,8 +13,37 @@ export const attendanceService = {
     return await apiClient.get(url);
   },
 
-  // Punch In/Out
-  punch: async (payload: { action: "in" | "out" }) => {
-    return await apiClient.post(API_ROUTES.CREATEATTENDANCE, payload);
+  // Punch In
+  punchIn: async (payload: { payload: string }) => {
+    return await apiClient.post(API_ROUTES.PUNCHIN, payload);
+  },
+
+  // Punch Out
+  punchOut: async (payload: { payload: string }) => {
+    return await apiClient.post(API_ROUTES.PUNCHOUT, payload);
+  },
+
+  // Attendance Range
+  getAttendanceRange: async (payload: string) => {
+    return await apiClient.get(
+      `${API_ROUTES.ATTENDANCERANGE}?payload=${payload}`,
+    );
+  },
+
+  // Fetch attendance detail by date
+  getDetailByDate: async (payload: string) => {
+    return await apiClient.get(
+      `${API_ROUTES.USER_ATTENDANCE_DETAIL}?payload=${payload}`,
+    );
+  },
+
+  // Holiday List
+  getHolidayList: async (payload: string) => {
+    return await apiClient.get(`${API_ROUTES.HOLIDAYLIST}?payload=${payload}`);
+  },
+
+  // regularize attendance
+  raiseAttendanceRequest: async (payload: { payload: string }) => {
+    return await apiClient.post(API_ROUTES.RAISE_ATTENDANCE_REQUEST, payload);
   },
 };

@@ -425,7 +425,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    marginTop: 10
+    // marginTop: 10
   },
 
   bookmarkTitle: {

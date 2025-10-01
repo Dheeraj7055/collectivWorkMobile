@@ -1,360 +1,688 @@
 // src/screens/AttendanceScreen.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Calendar } from "react-native-calendars";
+  Modal,
+  Pressable,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Calendar } from 'react-native-calendars';
 import {
   Edit2,
   Calendar as CalendarIcon,
   Check,
   ArrowUpRight,
-} from "lucide-react-native";
-import { AppDispatch, RootState } from "@/redux/store";
-import { useDispatch, useSelector } from "react-redux";
+  ArrowDownLeft,
+} from 'lucide-react-native';
+import { AppDispatch, RootState } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchAttendance,
-  punchAttendance,
-} from "@/redux/slices/attendanceSlice";
+  fetchAttendanceByDate,
+  fetchAttendanceRange,
+  fetchHolidayList,
+  MonthlyAttendanceRecord,
+  punchIn,
+  punchOut,
+} from '@/redux/slices/attendanceSlice';
+import { Header } from '@/components/Header';
+import moment from 'moment';
+import { StatusTag } from '@/components/StatusTag';
+import {
+  convertSecondsToHoursMinutes,
+  convertToFormattedTime,
+} from '@/common/CommonFunctions';
+import { Image } from 'react-native';
+import { HolidayImage } from '@/common/HolidayImage';
+import AppModal from '@/common/AppModal';
+import RegularizeModal from './AttendaneModal/RegularizeModal';
+import { styles } from '@/styles/attendanceStyles';
+import { debounce } from 'lodash';
+import { fetchUserNamesList } from '@/redux/slices/userSlice';
+
+interface DayLog {
+  punch_in: string | null;
+  punch_out: string | null;
+}
 
 export const AttendanceScreen: React.FC = () => {
-  const [currentTime, setCurrentTime] = useState("00:00:00");
   const [currentDate, setCurrentDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split('T')[0],
+  );
+  const dispatch = useDispatch<AppDispatch>();
+  const { todayRecord, monthlyRecords, holidayList, isLoading } = useSelector(
+    (state: RootState) => state.attendance,
+  );
+  const userData = useSelector((state: RootState) => state.user.profile);
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [showAndroidMenu, setShowAndroidMenu] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<any>(null);
+  const [showRegularizeModal, setShowRegularizeModal] = useState(false);
+
+  const punchOptions = useMemo(() => {
+    const options: { label: string; type: string }[] = [];
+    if (
+      userData?.AttendancePolicy?.enabled_ip_address ||
+      userData?.AttendancePolicy?.enabled_geo_fencing
+    ) {
+      options.push({ label: 'Web Punch In', type: 'web' });
+    }
+    if (userData?.AttendancePolicy?.enabled_work_from_home) {
+      options.push({ label: 'Remote Punch In', type: 'remote' });
+    }
+    return options;
+  }, [userData]);
+
+  const statusColors = useMemo(
+    () => ({
+      Present: '#4CAF50',
+      Absent: '#E53935',
+      Holiday: '#FB8C00',
+      Leave: '#FBC02D',
+      Sick: '#2196F3',
+    }),
+    [],
   );
 
-  const dispatch = useDispatch<AppDispatch>();
-  const { todayRecord, isCheckedIn, isLoading } = useSelector(
-    (state: RootState) => state.attendance
-  );
+  // 🔹 Fetch detail for a date
+  const handleFetchDetailByDate = (dateStr: string) => {
+    if (!userData?.id) return;
+    dispatch(fetchAttendanceByDate({ user_id: userData.id, date: dateStr }))
+      .unwrap()
+      .then(data => {
+        setSelectedDay(data);
+      })
+      .catch(err => console.error('Failed to fetch detail:', err));
+  };
+
+  // Initial load → fetch current date detail
+  useEffect(() => {
+    const today = moment().format('YYYY-MM-DD');
+    const isFuture = moment(currentDate).isAfter(today);
+
+    if (!isFuture) {
+      handleFetchDetailByDate(currentDate);
+    } else {
+      // Skip API for future dates
+      setSelectedDay(null);
+    }
+  }, [currentDate]);
 
   // 🔹 Fetch attendance on mount
   useEffect(() => {
-    dispatch(fetchAttendance());
+    if (!todayRecord) {
+      dispatch(fetchAttendance());
+    }
   }, [dispatch]);
 
-  // 🔹 Start timer when todayRecord.date exists
+  useEffect(() => {
+    if (monthlyRecords.length) {
+      const year = new Date(monthlyRecords[0].date).getFullYear();
+      dispatch(fetchHolidayList({ year }));
+    }
+  }, [monthlyRecords]);
+
   useEffect(() => {
     if (!todayRecord?.punch_in) {
-      setCurrentTime("00:00:00");
+      setIsCheckedIn(false);
       return;
     }
-    const punchInTime = new Date(todayRecord.punch_in).getTime();
-    if (!todayRecord.punch_out) {
-      // live ticking from punch_in to NOW
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const diff = now - punchInTime;
-  
-        const hours = Math.floor(diff / (1000 * 60 * 60))
-          .toString()
-          .padStart(2, "0");
-        const minutes = Math.floor((diff / (1000 * 60)) % 60)
-          .toString()
-          .padStart(2, "0");
-        const seconds = Math.floor((diff / 1000) % 60)
-          .toString()
-          .padStart(2, "0");
-  
-        setCurrentTime(`${hours}:${minutes}:${seconds}`);
-      }, 1000);
-  
-      return () => clearInterval(interval);
-    } else {
-      // static diff between punch_in and punch_out
-      const punchOutTime = new Date(todayRecord.punch_out).getTime();
-      const diff = punchOutTime - punchInTime;
-  
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-        .toString()
-        .padStart(2, "0");
-      const minutes = Math.floor((diff / (1000 * 60)) % 60)
-        .toString()
-        .padStart(2, "0");
-      const seconds = Math.floor((diff / 1000) % 60)
-        .toString()
-        .padStart(2, "0");
-  
-      setCurrentTime(`${hours}:${minutes}:${seconds}`);
-    }
-  }, [todayRecord?.punch_in, todayRecord?.punch_out]);
 
-  // 🔹 Handle Punch
-  const handlePunch = () => {
-    const type = isCheckedIn ? "out" : "in";
-    dispatch(punchAttendance({ action: type }));
+    const activity = todayRecord.activity || [];
+    if (activity.length > 0) {
+      const lastActivity = activity[activity.length - 1];
+      if (
+        lastActivity?.activity_type === 'Punch In' ||
+        lastActivity?.activity_type === 'Regularized Punch In'
+      ) {
+        setIsCheckedIn(true);
+      } else {
+        setIsCheckedIn(false);
+      }
+    } else {
+      setIsCheckedIn(true);
+    }
+  }, [todayRecord]);
+
+  const handlePunchIn = (type: string) => {
+    dispatch(punchIn({ punch_type: 'remote' }));
+    dispatch(fetchAttendance());
+    handleFetchDetailByDate(currentDate);
+    setShowAndroidMenu(false);
   };
 
+  // 🔹 Handle Punch Out
+  const handlePunchOut = () => {
+    dispatch(punchOut({ punch_type: todayRecord?.punch_type || 'remote' }));
+    dispatch(fetchAttendance());
+    handleFetchDetailByDate(currentDate);
+  };
+
+  // 🔹 Main button press
+  const onMainPunchPress = () => {
+    if (isCheckedIn) {
+      handlePunchOut();
+    } else {
+      if (punchOptions.length === 1) {
+        handlePunchIn(punchOptions[0].type); // direct
+      } else if (punchOptions.length > 1) {
+        setShowAndroidMenu(true); // open modal for choices
+      } else {
+        handlePunchIn('remote'); // fallback
+      }
+    }
+  };
 
   const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return "";
+    if (!dateStr) return '';
     const date = new Date(dateStr);
-  
+
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sept',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
-  
+
     const day = date.getDate();
     const month = months[date.getMonth()];
     const year = date.getFullYear();
-  
+
     // Add suffix (st, nd, rd, th)
     const suffix =
       day % 10 === 1 && day !== 11
-        ? "st"
+        ? 'st'
         : day % 10 === 2 && day !== 12
-        ? "nd"
+        ? 'nd'
         : day % 10 === 3 && day !== 13
-        ? "rd"
-        : "th";
-  
+        ? 'rd'
+        : 'th';
+
     return `${month} ${day}${suffix} ${year}`;
   };
-  
+
+  const handleFetchRange = useCallback(
+    debounce((year: number, month: number) => {
+      dispatch(fetchAttendanceRange({ year, month }));
+    }, 300),
+    [dispatch],
+  );
+
+  const handleRegularizeSubmit = () => {
+    console.log('submit');
+  };
+
+  const openRegularizeModal = () => {
+    setShowRegularizeModal(true);
+    dispatch(fetchUserNamesList({}));
+  }
+
+  useEffect(() => {
+    const now = new Date();
+    handleFetchRange(now.getFullYear(), now.getMonth()); // load on mount
+  }, []);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 50 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 🔹 Header */}
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Attendance</Text>
-          <Text style={styles.timer}>{currentTime}</Text>
-        </View>
+    <>
+      <RegularizeModal
+        visible={showRegularizeModal}
+        onClose={() => setShowRegularizeModal(false)}
+        onSubmit={handleRegularizeSubmit}
+      />
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 🔹 Today’s Utilization */}
+          <View style={styles.timeCard}>
+            <Text style={styles.sectionTitle}>Today's Time Utilization</Text>
+            <Text style={styles.subText}>{formatDisplayDate(currentDate)}</Text>
 
-        {/* 🔹 Today’s Utilization */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Today's Time Utilization</Text>
-          <Text style={styles.subText}>{formatDisplayDate(currentDate)}</Text>
-          <TouchableOpacity style={styles.punchButton} onPress={handlePunch}>
-            <Text style={styles.punchText}>
-              {isCheckedIn ? "Punch Out" : "Punch In"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 🔹 Calendar */}
-        <View style={styles.card}>
-          <Calendar
-            current={currentDate}
-            markedDates={{
-              [currentDate]: {
-                selected: true,
-                selectedColor: "#2196F3",
-              },
-            }}
-            theme={{
-              todayTextColor: "#2196F3",
-              arrowColor: "#2196F3",
-              textDayFontWeight: "500",
-              textMonthFontWeight: "700",
-            }}
-          />
-        </View>
-
-        {/* 🔹 Shift Details */}
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.dateTitle}>28 May 2025</Text>
-          </View>
-
-          {/* Title + Tag */}
-          <View style={styles.shiftRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.shiftTitle}>TSC Shift Timings</Text>
-              <Text style={styles.shiftTime}>09:30 AM - 07:30 PM</Text>
-            </View>
-            <View style={styles.wfhTag}>
-              <Text style={styles.wfhText}>WFH</Text>
-            </View>
-          </View>
-
-          {/* Expected Hours */}
-          <View style={styles.rowBetweenBorder}>
-            <View style={styles.colBox}>
-              <Text style={styles.colTitle}>Expected Gross hours</Text>
-              <Text style={styles.colValue}>10 hr</Text>
-            </View>
-            <View style={styles.colBox}>
-              <Text style={styles.colTitle}>Expected Effective hours</Text>
-              <Text style={styles.colValue}>09 hr</Text>
-            </View>
-          </View>
-
-          {/* Actions */}
-          <View style={styles.rowBetweenBorder}>
-            <TouchableOpacity style={styles.actionRow}>
-              <Edit2 size={16} color="#0E79B6" />
-              <Text style={styles.link}> Regularize</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionRow}>
-              <CalendarIcon size={16} color="#0E79B6" />
-              <Text style={styles.link}> Apply Leave</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Day Logs */}
-          <Text style={styles.sectionSubTitle}>Day Logs</Text>
-          <View style={styles.logRow}>
-            <Check size={14} color="green" />
-            <Text style={styles.logText}>10:30:31 AM</Text>
-            <ArrowUpRight size={14} color="red" />
-            <Text style={[styles.logText, { color: "red" }]}>11:27:58 AM</Text>
-          </View>
-          <View style={styles.logRow}>
-            <Check size={14} color="green" />
-            <Text style={styles.logText}>01:02:42 PM</Text>
-            <ArrowUpRight size={14} color="red" />
-            <Text style={[styles.logText, { color: "red" }]}>01:58:56 PM</Text>
-          </View>
-          <View style={styles.logRow}>
-            <Check size={14} color="green" />
-            <Text style={styles.logText}>05:01:25 PM</Text>
-            <ArrowUpRight size={14} color="red" />
-            <Text style={[styles.logText, { color: "red" }]}>--:--</Text>
-          </View>
-
-          {/* Adjusted Logs */}
-          <Text style={styles.sectionSubTitle}>Adjusted Logs</Text>
-          <View style={styles.logRow}>
-            <Check size={14} color="green" />
-            <Text style={styles.logText}>09:30:25 AM</Text>
-            <ArrowUpRight size={14} color="red" />
-            <Text style={[styles.logText, { color: "red" }]}>--:--</Text>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.rowBetweenBorder}>
-            <Text style={styles.infoText}>Actual Gross hour: --</Text>
-            <Text style={styles.infoText}>Actual Effective hour: --</Text>
-          </View>
-          <Text style={styles.infoText}>Break Time: 40 min</Text>
-        </View>
-
-        {/* 🔹 Upcoming Holidays */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Upcoming Holidays</Text>
-
-          {/* Holi */}
-          <View style={[styles.holidayBox, { borderColor: "#E53935" }]}>
-            <View>
-              <Text style={[styles.holidayName, { color: "#E53935" }]}>Holi</Text>
-              <Text style={styles.holidayDate}>02 October 2025</Text>
-            </View>
-          </View>
-
-          {/* Republic Day */}
-          <View style={[styles.holidayBox, { borderColor: "#0E79B6" }]}>
-            <View>
-              <Text style={[styles.holidayName, { color: "#0E79B6" }]}>
-                Republic Day
+            {/* 🔹 Main Punch Button */}
+            <TouchableOpacity
+              style={styles.punchButton}
+              onPress={onMainPunchPress}
+            >
+              <Text style={styles.punchText}>
+                {isCheckedIn
+                  ? `${
+                      todayRecord?.punch_type === 'remote'
+                        ? 'Remote '
+                        : todayRecord?.punch_type === 'web'
+                        ? 'Web '
+                        : todayRecord?.punch_type === 'open'
+                        ? 'Open '
+                        : ''
+                    }Punch Out`
+                  : 'Punch In'}
               </Text>
-              <Text style={styles.holidayDate}>26 January 2026</Text>
+            </TouchableOpacity>
+
+            {/* 🔹 Android Dropdown Modal */}
+            <Modal
+              visible={showAndroidMenu}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setShowAndroidMenu(false)}
+            >
+              <Pressable
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.3)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                onPress={() => setShowAndroidMenu(false)}
+              >
+                <View
+                  style={{
+                    backgroundColor: '#fff',
+                    borderRadius: 10,
+                    padding: 16,
+                    width: 250,
+                  }}
+                >
+                  {punchOptions.map(opt => (
+                    <TouchableOpacity
+                      key={opt.type}
+                      style={{ padding: 12 }}
+                      onPress={() => handlePunchIn(opt.type)}
+                    >
+                      <Text style={{ fontSize: 16, fontWeight: '500' }}>
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity
+                    style={{ padding: 12, alignItems: 'center' }}
+                    onPress={() => setShowAndroidMenu(false)}
+                  >
+                    <Text style={{ color: 'red' }}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </Pressable>
+            </Modal>
+          </View>
+
+          {/* 🔹 Calendar */}
+          <View style={styles.card}>
+            <Calendar
+              current={currentDate}
+              onMonthChange={monthObj => {
+                handleFetchRange(monthObj.year, monthObj.month - 1);
+              }}
+              dayComponent={({ date, state }) => {
+                if (!date) return null;
+                const dateStr = date.dateString;
+                const today = moment().format('YYYY-MM-DD');
+                const selected = currentDate || today;
+
+                // find record for this date
+                const record = monthlyRecords.find(
+                  rec => moment(rec.date).format('YYYY-MM-DD') === dateStr,
+                );
+
+                // decide short label + color
+                let label = '';
+                let labelColor = '#9E9E9E';
+
+                if (record?.holiday) {
+                  label = 'HD';
+                  labelColor = statusColors.Holiday;
+                } else if (record?.status === 'Absent') {
+                  label = 'AB';
+                  labelColor = statusColors.Absent;
+                } else if (record?.status === 'Present') {
+                  label = 'P';
+                  labelColor = statusColors.Present;
+                } else if (record?.status === 'Leave') {
+                  label = 'L';
+                  labelColor = statusColors.Leave;
+                } else if (record?.status === 'Sick Leave') {
+                  label = 'SL';
+                  labelColor = statusColors.Sick;
+                }
+
+                const isSelected = dateStr === selected;
+
+                return (
+                  <TouchableOpacity
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 40,
+                      height: 50,
+                    }}
+                    onPress={() => {
+                      const today = moment().format('YYYY-MM-DD');
+                      const isFuture = moment(dateStr).isAfter(today);
+
+                      if (!isFuture) {
+                        setCurrentDate(dateStr);
+                        handleFetchDetailByDate(dateStr);
+                      } else {
+                        // Optional: you can still highlight the future date
+                        setCurrentDate(dateStr);
+                      }
+                    }}
+                  >
+                    {/* Day number */}
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isSelected ? '#2196F3' : 'transparent',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: isSelected
+                            ? '#fff'
+                            : state === 'disabled'
+                            ? '#d9d9d9'
+                            : '#000',
+                          fontWeight: isSelected ? '700' : '500',
+                        }}
+                      >
+                        {date.day}
+                      </Text>
+                    </View>
+
+                    {/* Status label */}
+                    {label ? (
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 'bold',
+                          color: labelColor,
+                        }}
+                      >
+                        {label}
+                      </Text>
+                    ) : (
+                      <Text
+                        style={{ fontSize: 10, color: 'transparent' }}
+                      ></Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+              theme={{
+                todayTextColor: '#2196F3',
+                arrowColor: '#2196F3',
+                textDayFontWeight: '500',
+                textMonthFontWeight: '700',
+              }}
+            />
+          </View>
+
+          {/* 🔹 Shift Details */}
+          <View style={styles.card}>
+            {/* Header */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.dateTitle}>
+                {formatDisplayDate(selectedDay?.date || currentDate)}
+              </Text>
+            </View>
+            {/* Title + Tag */}
+            <View style={styles.shiftRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.shiftTitle}>
+                  {selectedDay?.shift_name || 'No Shift'}
+                </Text>
+                <Text style={styles.shiftTime}>
+                  {selectedDay?.shift_timing
+                    ? `${selectedDay.shift_timing.punch_in} - ${selectedDay.shift_timing.punch_out}`
+                    : '--'}
+                </Text>
+              </View>
+
+              <StatusTag
+                holiday={selectedDay?.holiday}
+                holiday_name={selectedDay?.holiday_name}
+                weekOff={selectedDay?.weekOff}
+                status={selectedDay?.status}
+                first_half={selectedDay?.first_half}
+                second_half={selectedDay?.second_half}
+                is_late_entries={selectedDay?.is_late_entries}
+              />
+            </View>
+            {/* Expected Hours */}
+            <View style={styles.rowBetweenBorder}>
+              <View style={styles.colBox}>
+                <Text style={styles.colTitle}>Expected Gross hours</Text>
+                <Text style={styles.colValue}>
+                  {selectedDay?.shift_timing?.gross_hours || '--'}
+                </Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.colTitle}>Expected Effective hours</Text>
+                <Text style={styles.colValue}>
+                  {selectedDay?.shift_timing?.effective_hours || '--'}
+                </Text>
+              </View>
+            </View>
+            {/* Actions */}
+            <View style={styles.rowBetweenBorder}>
+              <TouchableOpacity
+                style={styles.actionRow}
+                onPress={() => openRegularizeModal()} // 🔹 open modal
+              >
+                <Edit2 size={16} color="#0E79B6" />
+                <Text style={styles.link}> Regularize</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionRow}>
+                <CalendarIcon size={16} color="#0E79B6" />
+                <Text style={styles.link}> Apply Leave</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Day Logs */}
+            <Text style={styles.sectionSubTitle}>Day Logs</Text>
+            {selectedDay?.day_logs?.length > 0 ? (
+              selectedDay.day_logs.map((log: DayLog, idx: number) => (
+                <View key={idx} style={styles.dayLogRow}>
+                  <View style={styles.logTimerRow}>
+                    <ArrowDownLeft size={14} color="green" />
+                    <Text style={styles.logText}>
+                      {log.punch_in
+                        ? moment(log.punch_in).format('hh:mm:ss A')
+                        : '--:--'}
+                    </Text>
+                  </View>
+                  <View style={styles.logTimerRow}>
+                    <ArrowUpRight size={14} color="red" />
+                    <Text style={[styles.logText, { color: 'red' }]}>
+                      {log.punch_out
+                        ? moment(log.punch_out).format('hh:mm:ss A')
+                        : '--:--'}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.infoText}>No logs available</Text>
+            )}
+            {/* Adjusted Logs */}
+            {(selectedDay?.regularize_punch_in ||
+              selectedDay?.regularize_punch_out) && (
+              <>
+                <Text style={styles.sectionSubTitle}>Adjusted Logs</Text>
+                {selectedDay?.isRegularized ? (
+                  <View style={styles.logRow}>
+                    <Check size={14} color="green" />
+                    <Text style={styles.logText}>
+                      {selectedDay.regularize_punch_in
+                        ? moment(selectedDay.regularize_punch_in).format(
+                            'hh:mm:ss A',
+                          )
+                        : '--:--'}
+                    </Text>
+                    <ArrowUpRight size={14} color="red" />
+                    <Text style={[styles.logText, { color: 'red' }]}>
+                      {selectedDay.regularize_punch_out
+                        ? moment(selectedDay.regularize_punch_out).format(
+                            'hh:mm:ss A',
+                          )
+                        : '--:--'}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.infoText}>No adjustments</Text>
+                )}
+              </>
+            )}
+
+            {/* Footer */}
+            <View
+              style={[
+                styles.rowBetweenBorder,
+                { paddingVertical: 6, marginTop: 14 },
+              ]}
+            >
+              <View style={styles.colBox}>
+                <Text style={styles.colTitle}>Hour(s)</Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.colTitle}>Expected</Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.colTitle}>Actual</Text>
+              </View>
+            </View>
+            {/* Effective */}
+            <View style={[styles.rowBetweenBorder, { paddingVertical: 6 }]}>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>Effective</Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>
+                  {convertToFormattedTime(
+                    selectedDay?.shift_timing?.effective_hours,
+                  )}
+                </Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>
+                  {convertSecondsToHoursMinutes(
+                    Number(selectedDay?.actual_effective_hrs),
+                  )}
+                </Text>
+              </View>
+            </View>
+            {/* Gross */}
+            <View style={[styles.rowBetweenBorder, { paddingVertical: 6 }]}>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>Gross</Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>
+                  {convertToFormattedTime(
+                    selectedDay?.shift_timing?.gross_hours,
+                  )}
+                </Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>
+                  {convertSecondsToHoursMinutes(
+                    Number(selectedDay?.actual_gross_hrs),
+                  )}
+                </Text>
+              </View>
+            </View>
+            {/* Break */}
+            <View style={[styles.rowBetweenBorder, { paddingVertical: 6 }]}>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>Break</Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>
+                  {convertToFormattedTime(
+                    selectedDay?.shift_timing?.break_time,
+                  )}
+                </Text>
+              </View>
+              <View style={styles.colBox}>
+                <Text style={styles.infoText}>
+                  {convertSecondsToHoursMinutes(
+                    Number(selectedDay?.actual_break_time),
+                  )}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* 🔹 Upcoming Holidays */}
+          <View style={styles.holidayCard}>
+            <Text style={styles.sectionTitle}>Upcoming Holidays</Text>
+
+            {holidayList && holidayList.length > 0 ? (
+              holidayList.map((holiday, index) => {
+                // Assign colors (like Next.js getColor)
+                const colors = [
+                  '#F0394C',
+                  '#2FAAF0',
+                  '#F57325',
+                  '#FDB001',
+                  '#CD5118',
+                  '#1B434A',
+                ];
+                const barColor = colors[index % colors.length];
+
+                return (
+                  <View
+                    key={holiday.id}
+                    style={[
+                      styles.holidayBox,
+                      {
+                        borderColor: barColor,
+                        backgroundColor: barColor + '20',
+                      },
+                    ]}
+                  >
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <HolidayImage
+                        uri={holiday.holiday_image || ''}
+                        size={35}
+                        backgroundColor={barColor}
+                      />
+                      <View style={{ marginLeft: 10 }}>
+                        <Text style={[styles.holidayName, { color: barColor }]}>
+                          {holiday.holiday_name}
+                          {holiday.holiday_type === 'Restricted Holiday'
+                            ? ' (RH)'
+                            : ''}
+                        </Text>
+                        <Text style={[styles.holidayDate, { color: barColor }]}>
+                          {moment(holiday.holiday_from).format('DD MMMM YYYY')}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <Text style={styles.infoText}>No holidays found</Text>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 };
-
-// ---------------- STYLES ----------------
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f2f4f7" },
-
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    margin: 16,
-    alignItems: "center",
-  },
-  headerTitle: { fontSize: 20, fontWeight: "700" },
-  timer: { fontSize: 16, fontWeight: "600", color: "#2196F3" },
-
-  card: {
-    backgroundColor: "#fff",
-    padding: 16,
-    marginHorizontal: 12,
-    marginBottom: 12,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-
-  // Section Header
-  sectionHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingBottom: 6,
-    marginBottom: 8,
-  },
-
-  // Text Styles
-  sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  sectionSubTitle: { fontWeight: "600", marginTop: 10, marginBottom: 4 },
-  subText: { fontSize: 14, color: "#666", marginBottom: 10 },
-  infoText: { fontSize: 14, color: "#444" },
-  colTitle: { fontSize: 13, color: "#444", marginBottom: 2 },
-  colValue: { fontSize: 14, fontWeight: "600" },
-  logText: { fontSize: 13, color: "#333", marginHorizontal: 6 },
-
-  // Rows
-  rowBetweenBorder: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingVertical: 8,
-  },
-  logRow: { flexDirection: "row", alignItems: "center", marginVertical: 4 },
-  shiftRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  actionRow: { flexDirection: "row", alignItems: "center" },
-
-  colBox: { flex: 1 },
-
-  // Shift
-  dateTitle: { fontSize: 16, fontWeight: "700" },
-  shiftTitle: { fontSize: 15, fontWeight: "600", marginBottom: 2 },
-  shiftTime: { fontSize: 14, color: "#666" },
-  wfhTag: {
-    backgroundColor: "#E6F4EA",
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  wfhText: { color: "green", fontWeight: "700", fontSize: 12 },
-
-  link: { marginLeft: 6, color: "#0E79B6", fontWeight: "600" },
-
-  // ✅ Punch
-  punchButton: {
-    backgroundColor: "#2196F3",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: "center",
-  },
-  punchText: { color: "#fff", fontWeight: "600", fontSize: 15 },
-
-  // Holidays
-  holidayBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 10,
-  },
-  holidayName: { fontSize: 15, fontWeight: "700" },
-  holidayDate: { fontSize: 13, color: "#666", marginTop: 2 },
-});

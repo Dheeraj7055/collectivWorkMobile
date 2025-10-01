@@ -1080,7 +1080,6 @@ const handleWithdraw = () => {
         style={{ flex: 1, backgroundColor: '#f2f2f2' }}
         edges={['top', 'left', 'right']}
       >
-        <Header title="Leaves" />
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
             <Search size={20} color="#666" style={styles.searchIcon} />

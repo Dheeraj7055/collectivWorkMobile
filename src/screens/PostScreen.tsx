@@ -483,8 +483,6 @@ const handleCreate = async () => {
       style={{ flex: 1, backgroundColor: '#f2f2f2' }}
       edges={['top', 'left', 'right']}
     >
-      <Header title="Posts" />
-
       {/* Search + Buttons */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
