@@ -291,8 +291,19 @@ export const LeaveScreen: React.FC = () => {
   };
 
   const renderFakeInput = useCallback(
-    (label: string, value: Date | null, onPress: () => void) => (
-      <TouchableOpacity style={styles.input} onPress={onPress}>
+    (
+      label: string,
+      value: Date | null,
+      onPress: () => void,
+      errorField?: string,
+    ) => (
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() => {
+          if (errorField) clearError(errorField);
+          onPress();
+        }}
+      >
         <Text style={{ color: value ? '#000' : '#888' }}>
           {value ? value.toLocaleDateString() : label}
         </Text>
@@ -464,9 +475,18 @@ export const LeaveScreen: React.FC = () => {
     setActivePicker(null);
     if (!date) return;
 
-    if (type === 'single' || type === 'halfShort') setStartDate(date);
-    if (type === 'multiStart') setStartDate(date);
-    if (type === 'multiEnd') setEndDate(date);
+    if (type === 'single' || type === 'halfShort') {
+      setStartDate(date);
+      clearError('startDate')
+    } 
+    if (type === 'multiStart') {
+        setStartDate(date);
+        clearError('startDate');
+    } 
+    if (type === 'multiEnd') {
+      setEndDate(date);
+      clearError('endDate');
+    } 
   };
 
   const handleSubmit = () => {
@@ -582,6 +602,28 @@ export const LeaveScreen: React.FC = () => {
       });
   };
 
+  const closeLeaveModal = () => {
+    setLeaveModalVisible(false);
+    setSubject('');
+    setSelectedLeaveType('');
+    setDayType('');
+    setSelectedName('');
+    setDescription('');
+    setFileList([]);
+    setStartDate(null);
+    setEndDate(null);
+    setStartHalf('');
+    setEndHalf('');
+    setAllowBeyondQuota(false);
+    setLeaveRemainingLeaves(0);
+
+    setFormErrors({});
+  }
+
+  const clearError = (field: string) => {
+    setFormErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
   useEffect(() => {
     const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
     dispatch(fetchLeaves(payload) as any);
@@ -636,12 +678,10 @@ export const LeaveScreen: React.FC = () => {
     await dispatch(fetchLeaves(payload) as any);
   };
 
+
   return (
     <>
-      <AppModal
-        visible={leaveModalVisible}
-        onClose={() => setLeaveModalVisible(false)}
-      >
+      <AppModal visible={leaveModalVisible} onClose={() => closeLeaveModal()}>
         <View>
           <ScrollView
             style={{ maxHeight: 500 }}
@@ -650,8 +690,7 @@ export const LeaveScreen: React.FC = () => {
             {/* Header */}
             <Text style={styles.modalTitle}>Apply Leave</Text>
             <Text style={styles.modalSubtitle}>
-              Lorem Ipsum is simply dummy text of the printing and typesetting
-              industry.
+              Fill in the details below to request leave from your manager.
             </Text>
 
             {/* Subject */}
@@ -662,7 +701,10 @@ export const LeaveScreen: React.FC = () => {
               placeholder="Enter Subject"
               style={styles.input}
               value={subject}
-              onChangeText={setSubject}
+              onChangeText={text => {
+                setSubject(text);
+                clearError('subject');
+              }}
             />
             {formErrors.subject && (
               <Text style={styles.errorText}>{formErrors.subject}</Text>
@@ -674,9 +716,10 @@ export const LeaveScreen: React.FC = () => {
                 Leave Type <Text style={{ color: 'red' }}>*</Text>
               </Text>
               <RNPickerSelect
-                onValueChange={value =>
-                  handleLeaveChange(value, 'leave_duration')
-                }
+                onValueChange={value => {
+                  handleLeaveChange(value, 'leave_duration');
+                  clearError('leaveType');
+                }}
                 items={leaveListOptions.map(lt => ({
                   label: lt,
                   value: lt,
@@ -689,6 +732,30 @@ export const LeaveScreen: React.FC = () => {
               {formErrors.leaveType && (
                 <Text style={styles.errorText}>{formErrors.leaveType}</Text>
               )}
+              {!allowBeyondQuota &&
+                leaveRemainingLeaves === 0 &&
+                selectedLeaveType != '' && (
+                  <Text style={styles.errorText}>
+                    Oops! You've used all your leaves for this leave type.
+                  </Text>
+                )}
+              {allowBeyondQuota &&
+                leaveRemainingLeaves === 0 &&
+                selectedLeaveType != '' && (
+                  <Text style={styles.errorText}>
+                    Request raised beyond quota will be marked as LOP/Negative
+                    balance.
+                  </Text>
+                )}
+              {clubLeaveEnabled() ? (
+                <Text style={styles.errorText}>
+                  Your {selectedLeaveType} balance is insufficient for this
+                  request. Select Club Leave and choose another leave type to
+                  cover the remaining days.
+                </Text>
+              ) : (
+                ''
+              )}
             </View>
 
             {/* Leave Duration */}
@@ -698,9 +765,10 @@ export const LeaveScreen: React.FC = () => {
                 <Text style={{ color: 'red' }}>*</Text>
               </Text>
               <RNPickerSelect
-                onValueChange={(value: string | null, _index: number) =>
+                onValueChange={(value: string | null, _index: number) => {
                   handleDay(value)
-                }
+                  clearError('dayType');
+                }}
                 items={[
                   ...(allowedShortHalfday?.allow_short_leave
                     ? [{ label: 'Short Day Leave', value: 'short' }]
@@ -713,7 +781,21 @@ export const LeaveScreen: React.FC = () => {
                 ]}
                 placeholder={{ label: 'Select Day Type', value: '' }}
                 value={dayType}
-                style={pickerSelectStyles}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                  },
+                  inputIOS: {
+                    ...pickerSelectStyles.inputIOS,
+                    backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: !selectedLeaveType ? '#bbb' : '#000',
+                  },
+                }}
                 useNativeAndroidPickerStyle={false}
                 disabled={!selectedLeaveType}
               />
@@ -730,6 +812,7 @@ export const LeaveScreen: React.FC = () => {
                   </Text>
                   {renderFakeInput('Select Date', startDate, () =>
                     setActivePicker('single'),
+                    'startDate'
                   )}
                   {formErrors.startDate && (
                     <Text style={styles.errorText}>{formErrors.startDate}</Text>
@@ -747,6 +830,7 @@ export const LeaveScreen: React.FC = () => {
                     </Text>
                     {renderFakeInput('Select Start Date', startDate, () =>
                       setActivePicker('multiStart'),
+                      'startDate'
                     )}
                     {formErrors.startDate && (
                       <Text style={styles.errorText}>
@@ -761,7 +845,10 @@ export const LeaveScreen: React.FC = () => {
                       Select Half <Text style={{ color: 'red' }}>*</Text>
                     </Text>
                     <RNPickerSelect
-                      onValueChange={val => setStartHalf(val)}
+                      onValueChange={val => {
+                         setStartHalf(val);
+                         clearError('startHalf');
+                      }}
                       items={[
                         { label: 'First Half', value: 'first_half' },
                         { label: 'Second Half', value: 'second_half' },
@@ -785,6 +872,7 @@ export const LeaveScreen: React.FC = () => {
                     </Text>
                     {renderFakeInput('Select End Date', endDate, () =>
                       setActivePicker('multiEnd'),
+                      'endDate'
                     )}
                     {formErrors.endDate && (
                       <Text style={styles.errorText}>{formErrors.endDate}</Text>
@@ -797,7 +885,10 @@ export const LeaveScreen: React.FC = () => {
                       Select Half <Text style={{ color: 'red' }}>*</Text>
                     </Text>
                     <RNPickerSelect
-                      onValueChange={val => setEndHalf(val)}
+                      onValueChange={val => {
+                        setEndHalf(val);
+                        clearError('endHalf')
+                      }}
                       items={[
                         { label: 'First Half', value: 'first_half' },
                         { label: 'Second Half', value: 'second_half' },
@@ -822,6 +913,7 @@ export const LeaveScreen: React.FC = () => {
                   </Text>
                   {renderFakeInput('Select Date', startDate, () =>
                     setActivePicker('halfShort'),
+                    'startDate'
                   )}
                   {formErrors.startDate && (
                     <Text style={styles.errorText}>{formErrors.startDate}</Text>
@@ -911,7 +1003,10 @@ export const LeaveScreen: React.FC = () => {
               </Text>
 
               <RNPickerSelect
-                onValueChange={val => setSelectedName(val)}
+                onValueChange={val => {
+                  setSelectedName(val);
+                  clearError('requestTo');
+                }}
                 items={renderUserOptions(userData, names)}
                 value={selectedName}
                 placeholder={{
@@ -966,7 +1061,24 @@ export const LeaveScreen: React.FC = () => {
                   ]}
                   placeholder={{ label: 'Select Reason', value: '' }}
                   value={reason}
-                  style={pickerSelectStyles}
+                  // style={pickerSelectStyles}
+                  style={{
+                    ...pickerSelectStyles,
+                    inputAndroid: {
+                      ...pickerSelectStyles.inputAndroid,
+                      backgroundColor:
+                        reasonList?.length === 0 ? '#aaaaaa2e' : 'white',
+                    },
+                    inputIOS: {
+                      ...pickerSelectStyles.inputIOS,
+                      backgroundColor:
+                        reasonList?.length === 0 ? '#aaaaaa2e' : 'white',
+                    },
+                    placeholder: {
+                      ...pickerSelectStyles.placeholder,
+                      color: reasonList?.length === 0 ? '#bbb' : '#000',
+                    },
+                  }}
                   useNativeAndroidPickerStyle={false}
                   disabled={reasonList?.length === 0}
                 />
@@ -986,7 +1098,10 @@ export const LeaveScreen: React.FC = () => {
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               multiline
               value={description}
-              onChangeText={setDescription}
+              onChangeText={text => {
+                setDescription(text);
+                clearError('description');
+              }}
             />
             {formErrors.description && (
               <Text style={styles.errorText}>{formErrors.description}</Text>
@@ -1131,11 +1246,15 @@ export const LeaveScreen: React.FC = () => {
         <RefreshableList
           ListHeaderComponent={
             <View style={styles.summaryContainer}>
-              {userLeaveQuotaList?.leave_config?.map(
-                (leave: any, index: number) => (
+              {userLeaveQuotaList?.leave_config
+                ?.filter(
+                  (leave: any) =>
+                    leaveListOptions.includes(leave.leave_type) ||
+                    leave.leave_type.toLowerCase() === 'lop',
+                )
+                .map((leave: any, index: number) => (
                   <LeaveBalanceDonut key={index} data={leave} />
-                ),
-              )}
+                ))}
             </View>
           }
           data={leaveRequests}

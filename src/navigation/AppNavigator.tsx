@@ -20,6 +20,13 @@ import { LeaveRequestDetailScreen } from '@/screens/LeaveRequestDetailScreen';
 import { Header } from '@/components/Header';
 import useLiveLocation from '@/hooks/useLiveLocation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  CalendarDays,
+  Clock,
+  MessageCircle,
+  Share,
+  User,
+} from 'lucide-react-native';
 
 const ChatScreen = () => <Text>Chat Screen</Text>;
 
@@ -27,7 +34,7 @@ export type MainTabParamList = {
   Post: undefined;
   Chat: undefined;
   Attendance: undefined;
-  Leave: { openModal?: boolean }; 
+  Leave: { openModal?: boolean };
   Profile: undefined;
 };
 
@@ -45,7 +52,7 @@ const titleMap: Record<string, string> = {
   Post: 'Posts',
   Attendance: 'Attendance',
   Leave: 'Leave',
-  Chat: 'Chat',
+  // Chat: 'Chat',
   Profile: 'My Profile',
   Bookmarks: 'Bookmarks',
   LeaveRequestDetail: 'Leave Details',
@@ -59,12 +66,12 @@ export const ScreenWithHeader = ({
   children: React.ReactNode;
 }) => {
   // Always recalc based on nav state
-  const navState = useNavigationState((state) => state);
+  const navState = useNavigationState(state => state);
   let routeName: string;
 
-  if (route.name === "MainTabs") {
+  if (route.name === 'MainTabs') {
     // get current tab inside MainTabs
-    const focused = getFocusedRouteNameFromRoute(route) ?? "Post";
+    const focused = getFocusedRouteNameFromRoute(route) ?? 'Post';
 
     routeName = focused;
   } else {
@@ -88,40 +95,34 @@ const MainTabs: React.FC = () => {
         tabBarActiveTintColor: '#2196F3',
         tabBarInactiveTintColor: '#757575',
         tabBarIcon: ({ color, size }) => {
-          let icon;
+          let IconComponent;
           switch (route.name) {
             case 'Post':
-              icon = require('../../assets/icons/post.png');
+              IconComponent = Share;
               break;
             case 'Attendance':
-              icon = require('../../assets/icons/attendance.png');
+              IconComponent = CalendarDays;
               break;
             case 'Leave':
-              icon = require('../../assets/icons/clock.png');
+              IconComponent = Clock;
               break;
             case 'Chat':
-              icon = require('../../assets/icons/chat.png');
+              IconComponent = MessageCircle;
               break;
             case 'Profile':
-              icon = require('../../assets/icons/user.png');
+              IconComponent = User;
               break;
             default:
-              icon = require('../../assets/icons/post.png');
+              IconComponent = Share;
           }
-          return (
-            <Image
-              source={icon}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
-          );
+          return <IconComponent size={size} color={color} />;
         },
       })}
     >
       <Tab.Screen name="Post" component={PostScreen} />
       <Tab.Screen name="Attendance" component={AttendanceScreen} />
       <Tab.Screen name="Leave" component={LeaveScreen} />
-      <Tab.Screen name="Chat" component={ChatScreen} />
+      {/* <Tab.Screen name="Chat" component={ChatScreen} /> */}
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

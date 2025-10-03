@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchAttendance } from '@/redux/slices/attendanceSlice';
@@ -86,7 +86,12 @@ export const Header: React.FC<{ title: string }> = ({ title }) => {
 
   return (
     <View style={headerStyles.header}>
-      <Text style={headerStyles.title}>{title}</Text>
+      {/* <Text style={headerStyles.title}>{title}</Text> */}
+      <Image
+        source={require('../../assets/images/logo.png')}
+        style={{ width: 35, height: 35 }}
+        resizeMode="contain"
+      />
 
       {/* Timer */}
       <View style={headerStyles.timerRow}>

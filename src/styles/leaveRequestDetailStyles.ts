@@ -4,23 +4,34 @@ export const leaveRequestDetailStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
 
   // --- Header ---
-  topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-    marginTop: 18,
-  },
   back: { fontSize: 15, color: '#2196F3' },
-  topTitle: { fontSize: 16, fontWeight: '600' },
+  headerRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderBottomWidth: 1,
+  borderColor: '#eee',
+  paddingHorizontal: 12,
+  paddingVertical: 12,
+},
+side: {
+  width: 60,
+  alignItems: 'center',
+},
+center: {
+  flex: 1,
+  alignItems: 'center',
+},
+topTitle: {
+  fontSize: 16,
+  fontWeight: '600',
+},
+
 
   // --- Card ---
   card: {
     backgroundColor: '#fff',
     margin: 12,
+    marginTop: 0,
     padding: 14,
     borderRadius: 8,
     borderWidth: 1,

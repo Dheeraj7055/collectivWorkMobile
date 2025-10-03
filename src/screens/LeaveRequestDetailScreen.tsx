@@ -219,11 +219,6 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
     }
   }, [userData?.user_id, dispatch]);
 
-  // useEffect(() => {
-  //   dispatch(getLeaveUser({ leave_id }));
-  //   dispatch(fetchLeaveComments({ leave_id }));
-  // }, [leave_id, dispatch]);
-
   const reloadLeaveDetail = async () => {
     await dispatch(getLeaveUser({ leave_id }));
     await dispatch(fetchLeaveComments({ leave_id }));
@@ -295,20 +290,27 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
 
       <RefreshableScroll
         style={styles.container}
-        onRefreshData={reloadLeaveDetail} // ✅ pull-to-refresh
+        onRefreshData={reloadLeaveDetail} // pull-to-refresh
       >
         {/* Header */}
-        <View style={styles.topHeader}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.back}>{'<'} Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.topTitle}>{leaveUser?.subject}</Text>
-          {/* <TouchableOpacity>
-            <MoreVertical size={20} color="#333" />
-          </TouchableOpacity> */}
-          <TouchableOpacity onPress={() => openEditModal(leaveUser)}>
-            <Text style={{ color: '#0E79B6' }}>Edit</Text>
-          </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <View style={styles.side}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.back}>{'<'} Back</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.center}>
+            <Text  style={styles.topTitle}>{leaveUser?.subject?.length > 20 ? leaveUser?.subject?.slice(0,20) + '...' : leaveUser?.subject}</Text>
+          </View>
+
+          <View style={styles.side}>
+            {leaveUser?.status === 'Pending' && (
+              <TouchableOpacity onPress={() => openEditModal(leaveUser)}>
+                <Text style={{ color: '#0E79B6' }}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Card */}
