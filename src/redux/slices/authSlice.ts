@@ -24,11 +24,24 @@ export const loginUser = createAsyncThunk<
   }
 });
 
-// 🔑 Logout
-export const logoutUser = createAsyncThunk('auth/logout', async () => {
-  await authService.logout();
+// Logout session expire
+export const logoutExpire = createAsyncThunk('auth/logout', async () => {
+  await authService.logoutLocal();
   return null;
 });
+
+// Logout
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await authService.logout();
+      return null; // return nothing on success
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Logout failed');
+    }
+  },
+);
 
 // 🔑 Restore session
 export const restoreSessionFromStorage = createAsyncThunk<

@@ -7,7 +7,9 @@ export const authService = {
   // 🔑 Login
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const encodedPayload = encodeData(credentials);
-    const response = await apiClient.post<any>('/api/users/login', { payload: encodedPayload });
+    const response = await apiClient.post<any>('/api/users/login', {
+      payload: encodedPayload,
+    });
     const token = response.data.token || '';
     const refreshToken = response.data.refreshToken || '';
 
@@ -30,10 +32,22 @@ export const authService = {
     };
   },
 
-  // 🔑 Logout
-  logout: async (): Promise<void> => {
+  // Logout session expired
+  logoutLocal: async (): Promise<void> => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('refreshToken');
+  },
+
+  // Logout
+  logout: async (): Promise<void> => {
+    try {
+      await apiClient.post('/api/users/logout');
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('refreshToken');
+    } catch (error) {
+      console.error('Logout API failed:', error);
+      throw error;
+    }
   },
 
   // 🔑 Restore session

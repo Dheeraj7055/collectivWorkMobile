@@ -6,12 +6,26 @@ import { Header } from '@/components/Header';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/redux/store';
 import { logoutUser } from '@/redux/slices/authSlice';
+import Toast from 'react-native-toast-message';
 
 export const ProfileScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const handleLogout = () => {
-    dispatch(logoutUser());
+    dispatch(logoutUser())
+      .unwrap()
+      .then(() => {
+        Toast.show({
+          type: 'success',
+          text1: 'Logged out successfully',
+        });
+      })
+      .catch(err => {
+        Toast.show({
+          type: 'error',
+          text1: err || 'Logout failed',
+        });
+      });
   };
 
   return (
