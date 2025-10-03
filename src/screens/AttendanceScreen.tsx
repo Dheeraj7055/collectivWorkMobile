@@ -46,6 +46,7 @@ import { fetchUserNamesList } from '@/redux/slices/userSlice';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '@/navigation/AppNavigator';
+import { RefreshableScroll } from '@/common/RefreshableScroll';
 
 type LeaveNavProp = BottomTabNavigationProp<MainTabParamList, 'Leave'>;
 
@@ -240,6 +241,22 @@ export const AttendanceScreen: React.FC = () => {
     handleFetchRange(now.getFullYear(), now.getMonth()); // load on mount
   }, []);
 
+  const reloadAttendance = async () => {
+    await dispatch(fetchAttendance());
+    const now = new Date();
+    await dispatch(
+      fetchAttendanceRange({ year: now.getFullYear(), month: now.getMonth() }),
+    );
+    if (userData?.id) {
+      await dispatch(
+        fetchAttendanceByDate({
+          user_id: userData.id,
+          date: moment().format('YYYY-MM-DD'),
+        }),
+      );
+    }
+  };
+
   return (
     <>
       <RegularizeModal
@@ -248,8 +265,9 @@ export const AttendanceScreen: React.FC = () => {
         onSubmit={handleRegularizeSubmit}
       />
       <View style={styles.container}>
-        <ScrollView
+        <RefreshableScroll
           showsVerticalScrollIndicator={false}
+          onRefreshData={reloadAttendance}   // pull-to-refresh
         >
           {/* 🔹 Today’s Utilization */}
           <View style={styles.timeCard}>
@@ -692,7 +710,7 @@ export const AttendanceScreen: React.FC = () => {
               <Text style={styles.infoText}>No holidays found</Text>
             )}
           </View>
-        </ScrollView>
+        </RefreshableScroll>
       </View>
     </>
   );

@@ -11,7 +11,13 @@ import {
 } from 'react-native';
 import { ProgressCircle } from 'react-native-svg-charts';
 import { styles, pickerSelectStyles } from '@/styles/leaveStyles';
-import { MoreVertical, Plus, Search, Upload, XCircleIcon } from 'lucide-react-native';
+import {
+  MoreVertical,
+  Plus,
+  Search,
+  Upload,
+  XCircleIcon,
+} from 'lucide-react-native';
 import { Card } from '@/components/Card';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/Header';
@@ -27,7 +33,9 @@ import { fetchUserData, fetchUserNamesList } from '@/redux/slices/userSlice';
 import moment from 'moment';
 import AppModal from '@/common/AppModal';
 import RNPickerSelect from 'react-native-picker-select';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { AppStackParamList, MainTabParamList } from '@/navigation/AppNavigator';
@@ -36,7 +44,7 @@ import LeaveBalanceDonut from '@/components/LeaveBalanceDonut';
 import ConfirmationModal from '@/common/ConfirmationModal';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-
+import { RefreshableList } from '@/common/RefreshableList';
 
 type LeaveScreenRoute = RouteProp<MainTabParamList, 'Leave'>;
 
@@ -65,7 +73,6 @@ type LeaveScreenNavProp = StackNavigationProp<AppStackParamList, 'MainTabs'>;
 dayjs.extend(isSameOrBefore);
 
 export const LeaveScreen: React.FC = () => {
-
   const userData = useSelector((state: RootState) => state.user.profile);
   const { names } = useSelector((state: RootState) => state.user);
   const { userLeaveQuotaList } = useSelector((state: RootState) => state.leave);
@@ -76,7 +83,7 @@ export const LeaveScreen: React.FC = () => {
   const [selectedName, setSelectedName] = useState<string>('');
   const route = useRoute<LeaveScreenRoute>();
   const [activePicker, setActivePicker] = useState<
-    null | "single" | "multiStart" | "multiEnd" | "halfShort"
+    null | 'single' | 'multiStart' | 'multiEnd' | 'halfShort'
   >(null);
 
   // Common form validation flag
@@ -108,8 +115,8 @@ export const LeaveScreen: React.FC = () => {
   const [fileList, setFileList] = useState<any[]>([]);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [errorText, setErrorText] = useState('');
-  const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState('');
+  const [subject, setSubject] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Quota & Balance
@@ -142,7 +149,9 @@ export const LeaveScreen: React.FC = () => {
     allow_short_leave: boolean;
   } | null>(null);
   const [withdrawModalVisible, setWithdrawModalVisible] = useState(false);
-  const [selectedLeaveId, setSelectedLeaveId] = useState<number | string | null>(null);
+  const [selectedLeaveId, setSelectedLeaveId] = useState<
+    number | string | null
+  >(null);
 
   const [dayType, setDayType] = useState<string>('');
 
@@ -416,7 +425,7 @@ export const LeaveScreen: React.FC = () => {
     try {
       const result = await launchImageLibrary({
         mediaType: 'mixed',
-        selectionLimit: 0, 
+        selectionLimit: 0,
       });
 
       if (result.didCancel) return;
@@ -426,7 +435,7 @@ export const LeaveScreen: React.FC = () => {
       }
 
       if (result.assets && result.assets.length > 0) {
-        setFileList((prev) => [...prev, ...(result.assets ?? [])]);
+        setFileList(prev => [...prev, ...(result.assets ?? [])]);
         setMandatoryAttachment(false);
       }
     } catch (err) {
@@ -461,119 +470,117 @@ export const LeaveScreen: React.FC = () => {
   };
 
   const handleSubmit = () => {
-  const errors: Record<string, string> = {};
+    const errors: Record<string, string> = {};
 
-  if (!subject.trim()) errors.subject = "Subject is required.";
-  if (!selectedLeaveType) errors.leaveType = "Leave Type is required.";
-  if (!dayType) errors.dayType = "Leave Duration is required.";
-  if (!selectedName) errors.requestTo = "Request To is required.";
-  if (!description.trim()) errors.description = "Description is required.";
+    if (!subject.trim()) errors.subject = 'Subject is required.';
+    if (!selectedLeaveType) errors.leaveType = 'Leave Type is required.';
+    if (!dayType) errors.dayType = 'Leave Duration is required.';
+    if (!selectedName) errors.requestTo = 'Request To is required.';
+    if (!description.trim()) errors.description = 'Description is required.';
 
-  // --- Extra validations based on dayType ---
-  if (dayType === "single" && !startDate) {
-    errors.startDate = "Date is required for single day leave.";
-  }
-
-  if (dayType === "multiple") {
-    if (!startDate) errors.startDate = "Start date is required.";
-    if (!endDate) errors.endDate = "End date is required.";
-    if (!startHalf) errors.startHalf = "Start half is required.";
-    if (!endHalf) errors.endHalf = "End half is required.";
-
-    if (startDate && endDate && moment(endDate).isBefore(moment(startDate))) {
-      errors.endDate = "End date cannot be before start date.";
+    // --- Extra validations based on dayType ---
+    if (dayType === 'single' && !startDate) {
+      errors.startDate = 'Date is required for single day leave.';
     }
-  }
 
-  if ((dayType === "half" || dayType === "short") && !startDate) {
-    errors.startDate = "Date is required for half/short leave.";
-  }
+    if (dayType === 'multiple') {
+      if (!startDate) errors.startDate = 'Start date is required.';
+      if (!endDate) errors.endDate = 'End date is required.';
+      if (!startHalf) errors.startHalf = 'Start half is required.';
+      if (!endHalf) errors.endHalf = 'End half is required.';
 
-  setFormErrors(errors);
+      if (startDate && endDate && moment(endDate).isBefore(moment(startDate))) {
+        errors.endDate = 'End date cannot be before start date.';
+      }
+    }
 
-  if (Object.keys(errors).length === 0) {
-    const matched = userLeaveQuotaList?.leave_config?.filter(
-      (item: any) => item?.leave_type === selectedLeaveType
-    );
-    const short_code = matched?.[0]?.leave_code || "";
+    if ((dayType === 'half' || dayType === 'short') && !startDate) {
+      errors.startDate = 'Date is required for half/short leave.';
+    }
 
-    const payload = {
-      subject,
-      leave_type: selectedLeaveType,
-      short_code,
+    setFormErrors(errors);
 
-      // Dates
-      start_date: startDate ? moment(startDate).format("YYYY-MM-DD") : null,
-      end_date:
-        dayType === "multiple" && endDate
-          ? moment(endDate).format("YYYY-MM-DD")
-          : moment(startDate).format("YYYY-MM-DD"),
+    if (Object.keys(errors).length === 0) {
+      const matched = userLeaveQuotaList?.leave_config?.filter(
+        (item: any) => item?.leave_type === selectedLeaveType,
+      );
+      const short_code = matched?.[0]?.leave_code || '';
 
-      // Halves
-      start_half: startHalf || "first_half",
-      end_half: endHalf || "second_half",
+      const payload = {
+        subject,
+        leave_type: selectedLeaveType,
+        short_code,
 
-      // Clubbing
-      clubing: clubing || "",
-      is_clubing: !!isClubChecked,
+        // Dates
+        start_date: startDate ? moment(startDate).format('YYYY-MM-DD') : null,
+        end_date:
+          dayType === 'multiple' && endDate
+            ? moment(endDate).format('YYYY-MM-DD')
+            : moment(startDate).format('YYYY-MM-DD'),
 
-      // Duration type
-      day_type: dayType,
+        // Halves
+        start_half: startHalf || 'first_half',
+        end_half: endHalf || 'second_half',
 
-      // Reason
-      reason: reason === "other" ? otherReason : reason,
+        // Clubbing
+        clubing: clubing || '',
+        is_clubing: !!isClubChecked,
 
-      description,
-      request_to: selectedName,
-    };
+        // Duration type
+        day_type: dayType,
 
+        // Reason
+        reason: reason === 'other' ? otherReason : reason,
 
-    dispatch(createLeave({ payload, files: fileList }))
+        description,
+        request_to: selectedName,
+      };
+
+      dispatch(createLeave({ payload, files: fileList }))
+        .unwrap()
+        .then(res => {
+          setSubject('');
+          setSelectedLeaveType('');
+          setDayType('');
+          setSelectedName('');
+          setDescription('');
+          setFileList([]);
+          setStartDate(null);
+          setEndDate(null);
+          setStartHalf('');
+          setEndHalf('');
+          const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
+          dispatch(fetchLeaves(payload) as any);
+          setLeaveModalVisible(false);
+        })
+        .catch(err => {
+          console.error('Leave creation failed', err);
+        });
+    }
+  };
+
+  const openWithdrawalModal = (id: number | string) => {
+    setSelectedLeaveId(id);
+    setWithdrawModalVisible(true);
+  };
+
+  const handleWithdraw = () => {
+    if (!selectedLeaveId) return;
+    dispatch(withdrawLeave({ leave_request_id: selectedLeaveId }))
       .unwrap()
-      .then((res) => {
-        setSubject("");
-        setSelectedLeaveType("");
-        setDayType("");
-        setSelectedName("");
-        setDescription("");
-        setFileList([]);
-        setStartDate(null);
-        setEndDate(null);
-        setStartHalf("");
-        setEndHalf("");
+      .then(res => {
+        if (res.success) {
+          console.log('Leave withdrawn successfully');
+        }
+        setWithdrawModalVisible(false);
         const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
         dispatch(fetchLeaves(payload) as any);
-        setLeaveModalVisible(false);
       })
-      .catch((err) => {
-        console.error("Leave creation failed", err);
+      .catch(err => {
+        console.error('Withdraw failed', err);
+        setWithdrawModalVisible(false);
       });
-  }
-};
-
-const openWithdrawalModal = (id: number | string) => {
-  setSelectedLeaveId(id);
-  setWithdrawModalVisible(true);
-};
-
-const handleWithdraw = () => {
-  if (!selectedLeaveId) return;
-  dispatch(withdrawLeave({ leave_request_id: selectedLeaveId }))
-    .unwrap()
-    .then(res => {
-      if (res.success) {
-        console.log('Leave withdrawn successfully');
-      }
-      setWithdrawModalVisible(false);
-      const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
-      dispatch(fetchLeaves(payload) as any);
-    })
-    .catch(err => {
-      console.error('Withdraw failed', err);
-      setWithdrawModalVisible(false);
-    });
-};
-
+  };
 
   useEffect(() => {
     const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
@@ -624,6 +631,10 @@ const handleWithdraw = () => {
       .filter((type: string) => type.toLowerCase() !== 'lop');
   }, [userLeaveQuotaList, userData?.gender, userData?.marital_status]);
 
+  const reloadLeaves = async () => {
+    const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
+    await dispatch(fetchLeaves(payload) as any);
+  };
 
   return (
     <>
@@ -1087,9 +1098,7 @@ const handleWithdraw = () => {
         onCancel={() => setWithdrawModalVisible(false)}
       />
 
-      <View
-        style={{ flex: 1, backgroundColor: '#f2f2f2' }}
-      >
+      <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
             <Search size={20} color="#666" style={styles.searchIcon} />
@@ -1119,7 +1128,7 @@ const handleWithdraw = () => {
             <Plus size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        <FlatList
+        <RefreshableList
           ListHeaderComponent={
             <View style={styles.summaryContainer}>
               {userLeaveQuotaList?.leave_config?.map(
@@ -1225,9 +1234,14 @@ const handleWithdraw = () => {
               </View>
             </Card>
           )}
+          onRefreshData={reloadLeaves}
+          ListEmptyComponent={
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>
+              No leave requests found
+            </Text>
+          }
         />
       </View>
     </>
   );
 };
-

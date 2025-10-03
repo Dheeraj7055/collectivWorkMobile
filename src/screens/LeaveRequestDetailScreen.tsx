@@ -30,6 +30,7 @@ import {
 } from '@/common/CommonFunctions';
 import EditLeaveModal from './LeaveModal/EditLeaveModal';
 import { fetchUserNamesList } from '@/redux/slices/userSlice';
+import { RefreshableScroll } from '@/common/RefreshableScroll';
 
 export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
   const { leave_id } = route.params;
@@ -218,10 +219,22 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
     }
   }, [userData?.user_id, dispatch]);
 
+  // useEffect(() => {
+  //   dispatch(getLeaveUser({ leave_id }));
+  //   dispatch(fetchLeaveComments({ leave_id }));
+  // }, [leave_id, dispatch]);
+
+  const reloadLeaveDetail = async () => {
+    await dispatch(getLeaveUser({ leave_id }));
+    await dispatch(fetchLeaveComments({ leave_id }));
+    if (userData?.user_id) {
+      await dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
+    }
+  };
+
   useEffect(() => {
-    dispatch(getLeaveUser({ leave_id }));
-    dispatch(fetchLeaveComments({ leave_id }));
-  }, [leave_id, dispatch]);
+    reloadLeaveDetail();
+  }, [leave_id]);
 
   if (isDetailLoading) {
     return (
@@ -280,7 +293,10 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
         </View>
       </Modal>
 
-      <ScrollView style={styles.container}>
+      <RefreshableScroll
+        style={styles.container}
+        onRefreshData={reloadLeaveDetail} // ✅ pull-to-refresh
+      >
         {/* Header */}
         <View style={styles.topHeader}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -563,7 +579,7 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
             ))
           )}
         </View>
-      </ScrollView>
+      </RefreshableScroll>
     </>
   );
 };

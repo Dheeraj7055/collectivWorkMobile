@@ -16,6 +16,7 @@ import { styles } from "@/styles/postScreenStyles";
 import { ArrowLeft, Bookmark, EllipsisVertical, SearchIcon } from "lucide-react-native";
 import { getInitials } from "@/common/CommonFunctions";
 import moment from "moment";
+import { RefreshableList } from "@/common/RefreshableList";
 
 const BookmarkRow = ({ announcement }: any) => {
   return (
@@ -73,6 +74,10 @@ export const BookmarkScreen = ({ navigation }: any) => {
     dispatch(fetchBookmarks());
   }, [dispatch]);
 
+  const reloadBookmarks = async () => {
+    await dispatch(fetchBookmarks());
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
       {/* <View style={styles.searchRow}>
@@ -110,11 +115,25 @@ export const BookmarkScreen = ({ navigation }: any) => {
       )}
 
       <View style={styles.bookmarkCard}>
-        <FlatList
+        {/* <FlatList
           data={records}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => <BookmarkRow announcement={item} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+        /> */}
+        <RefreshableList
+          data={records}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => <BookmarkRow announcement={item} />}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          onRefreshData={reloadBookmarks} // ✅ pull-to-refresh here
+          ListEmptyComponent={
+            !isLoading ? (
+              <Text style={{ textAlign: "center", marginTop: 20 }}>
+                No bookmarks found
+              </Text>
+            ) : null
+          }
         />
       </View>
     </SafeAreaView>

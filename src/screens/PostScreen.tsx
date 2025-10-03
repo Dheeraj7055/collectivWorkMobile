@@ -44,6 +44,7 @@ import { encodeData } from '@/utils/cryptoHelpers';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '@/navigation/AppNavigator';
+import { RefreshableList } from '@/common/RefreshableList';
 
 
 // --- TYPES ---
@@ -477,11 +478,13 @@ const handleCreate = async () => {
   }
 };
 
+ const reloadPosts = async () => {
+    await dispatch(fetchAnnouncements({ postName: "all", searchParam: "" }));
+  };
+
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: '#f2f2f2' }}
-    >
+    <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
       {/* Search + Buttons */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
@@ -508,7 +511,14 @@ const handleCreate = async () => {
         {dropdownVisible && (
           <View style={styles.dropdownMenu}>
             {(
-              ['all', 'posts', 'praise', 'liked', 'repost', 'bookmark'] as PostFilter[]
+              [
+                'all',
+                'posts',
+                'praise',
+                'liked',
+                'repost',
+                'bookmark',
+              ] as PostFilter[]
             ).map(option => (
               <TouchableOpacity
                 key={option}
@@ -534,7 +544,7 @@ const handleCreate = async () => {
                     ? 'Praise'
                     : option === 'liked'
                     ? 'Liked Posts'
-                    :option === 'bookmark'
+                    : option === 'bookmark'
                     ? 'Bookmarked Posts'
                     : 'Reposted Posts'}
                 </Text>
@@ -549,413 +559,410 @@ const handleCreate = async () => {
         >
           <Plus size={20} color="#fff" />
         </TouchableOpacity>
-
       </View>
-        {/* --- Modal 1: Post Type --- */}
-        <AppModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-          <View style={styles.iconGeneralCircle}>
-            <Volume2 size="20" color="#0E79B6" />
-          </View>
-          <Text style={styles.modalTitle}>Post</Text>
-          <Text style={styles.subtitle}>
-            Choose the type of post you want to create.
-          </Text>
+      {/* --- Modal 1: Post Type --- */}
+      <AppModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+        <View style={styles.iconGeneralCircle}>
+          <Volume2 size="20" color="#0E79B6" />
+        </View>
+        <Text style={styles.modalTitle}>Post</Text>
+        <Text style={styles.subtitle}>
+          Choose the type of post you want to create.
+        </Text>
 
-          {options.map(option => (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.option,
-                selectedOption === option.id && styles.optionSelected,
-              ]}
-              onPress={() => setSelectedOption(option.id)}
-            >
-              <View style={styles.optionHeader}>
-                <View
-                  style={[
-                    styles.iconCircle,
-                    selectedOption === option.id && styles.iconCircleSelected,
-                  ]}
-                >
-                  <Text style={styles.iconText}>{option.icon}</Text>
-                </View>
-                <Text
-                  style={[
-                    styles.optionTitle,
-                    selectedOption === option.id && styles.optionTitleSelected,
-                  ]}
-                >
-                  {option.title}
-                </Text>
-                <View
-                  style={[
-                    styles.radioOuter,
-                    selectedOption === option.id && styles.radioOuterSelected,
-                  ]}
-                >
-                  {selectedOption === option.id && (
-                    <View style={styles.radioInner} />
-                  )}
-                </View>
+        {options.map(option => (
+          <TouchableOpacity
+            key={option.id}
+            style={[
+              styles.option,
+              selectedOption === option.id && styles.optionSelected,
+            ]}
+            onPress={() => setSelectedOption(option.id)}
+          >
+            <View style={styles.optionHeader}>
+              <View
+                style={[
+                  styles.iconCircle,
+                  selectedOption === option.id && styles.iconCircleSelected,
+                ]}
+              >
+                <Text style={styles.iconText}>{option.icon}</Text>
               </View>
               <Text
                 style={[
-                  styles.optionDesc,
-                  selectedOption === option.id && styles.optionDescSelected,
+                  styles.optionTitle,
+                  selectedOption === option.id && styles.optionTitleSelected,
                 ]}
               >
-                {option.desc}
+                {option.title}
               </Text>
-            </TouchableOpacity>
-          ))}
-
-          <TouchableOpacity
-            style={styles.confirmButton}
-            onPress={handleConfirmOption}
-          >
-            <Text style={styles.confirmText}>Confirm</Text>
-          </TouchableOpacity>
-        </AppModal>
-
-        {/* --- Modal 2: Audience Selection --- */}
-        <AppModal
-          visible={audienceModalVisible}
-          onClose={() => setAudienceModalVisible(false)}
-        >
-          <View style={styles.iconGeneralCircle}>
-            <Volume2 size="20" color="#0E79B6" />
-          </View>
-          <Text style={styles.modalTitle}>{selectedOption}</Text>
-          <Text style={styles.subtitle}>Select audience for this post.</Text>
-
-          <AudienceDropdown
-            selectAll={selectAll}
-            sectionSelection={sectionSelection}
-            handleSelectAllChange={handleSelectAllChange}
-            setSectionSelection={setSectionSelection}
-          />
-
-          {!selectAll && sectionSelection === 'departments' && (
-            <Dropdown
-              style={styles.dropdownDept}
-              data={departmentNames.map(d => ({
-                label: d.label,
-                value: String(d.id),
-              }))}
-              labelField="label"
-              valueField="value"
-              placeholder="Select Departments"
-              value={selectedAudience.departments}
-              onChange={item =>
-                handleDepartmentsChange(
-                  selectedAudience.departments.includes(item.value)
-                    ? selectedAudience.departments.filter(v => v !== item.value)
-                    : [...selectedAudience.departments, item.value],
-                )
-              }
-              renderItem={item => (
-                <Text style={{ padding: 8 }}>{item.label}</Text>
-              )}
-            />
-          )}
-
-          {!selectAll && sectionSelection === 'individuals' && (
-            <Dropdown
-              style={styles.dropdownDept}
-              data={names.map(u => ({
-                label: `${u.first_name} ${u.last_name}`,
-                value: String(u.id),
-              }))}
-              labelField="label"
-              valueField="value"
-              placeholder="Select Users"
-              value={selectedAudience.individuals}
-              onChange={item =>
-                handleIndividualsChange(
-                  selectedAudience.individuals.includes(item.value)
-                    ? selectedAudience.individuals.filter(v => v !== item.value)
-                    : [...selectedAudience.individuals, item.value],
-                )
-              }
-              renderItem={item => (
-                <Text style={{ padding: 8 }}>{item.label}</Text>
-              )}
-            />
-          )}
-
-          {/* Chips */}
-          <ScrollView
-            style={{ maxHeight: 100 }}
-            contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap' }}
-            nestedScrollEnabled
-          >
-            {selectedParent.map(value => {
-              const user = names.find(u => String(u.id) === value);
-
-              if (!user) {
-                return null;
-              }
-
-              return (
-                <View
-                  key={value}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: 6,
-                    margin: 4,
-                    backgroundColor: '#eee',
-                    borderRadius: 16,
-                  }}
-                >
-                  <Text style={{ marginRight: 6 }}>
-                    {`${user.first_name} ${user.last_name}`}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => handleRemoveSelectedParent(value)}
-                  >
-                    <Text style={{ color: 'red' }}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </ScrollView>
-
-          <TouchableOpacity
-            style={styles.confirmButton}
-            onPress={handleConfirmAudience}
-          >
-            <Text style={styles.confirmText}>Confirm</Text>
-          </TouchableOpacity>
-        </AppModal>
-
-        {/* --- Modal 3: Post Form --- */}
-        <AppModal
-          visible={postModalVisible}
-          onClose={() => setPostModalVisible(false)}
-        >
-          <View style={styles.iconGeneralCircle}>
-            <ClipboardList size="20" color="#0E79B6" />
-          </View>
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.modalTitle}>{selectedOption}</Text>
-              <Text style={styles.subtitle}>Fill in the details below</Text>
-            </View>
-          </View>
-
-          {selectedOption == 'Praise' ? (
-            <View>
-              <View style={{ marginVertical: 10 }}>
-                <Text style={styles.subjectText}>Praise To</Text>
-                <Dropdown
-                  style={{
-                    height: 50,
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 10,
-                    borderColor: '#ccc',
-                    marginBottom: 8,
-                  }}
-                  data={names.map(u => ({
-                    label: `${u.first_name} ${u.last_name}`,
-                    value: String(u.id),
-                  }))}
-                  labelField="label"
-                  valueField="value"
-                  placeholder="Select User"
-                  value={praiseTo}
-                  onChange={item => {
-                    setPraiseTo(item.value);
-                  }}
-                  renderItem={item => (
-                    <Text style={{ padding: 8 }}>{item.label}</Text>
-                  )}
-                />
+              <View
+                style={[
+                  styles.radioOuter,
+                  selectedOption === option.id && styles.radioOuterSelected,
+                ]}
+              >
+                {selectedOption === option.id && (
+                  <View style={styles.radioInner} />
+                )}
               </View>
             </View>
-          ) : (
-            ''
-          )}
+            <Text
+              style={[
+                styles.optionDesc,
+                selectedOption === option.id && styles.optionDescSelected,
+              ]}
+            >
+              {option.desc}
+            </Text>
+          </TouchableOpacity>
+        ))}
 
-          {selectedOption != 'Poll' ? (
-            <View>
-              <Text style={styles.subjectText}>Subject</Text>
-              <TextInput
-                value={subject}
-                onChangeText={setSubject}
-                placeholder="Enter subject"
-                style={styles.input}
-              />
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirmOption}
+        >
+          <Text style={styles.confirmText}>Confirm</Text>
+        </TouchableOpacity>
+      </AppModal>
 
-              <Text style={styles.subjectText}>Description</Text>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Enter description"
-                multiline
-                style={[styles.input, styles.textarea]}
-              />
-            </View>
-          ) : (
-            ''
-          )}
+      {/* --- Modal 2: Audience Selection --- */}
+      <AppModal
+        visible={audienceModalVisible}
+        onClose={() => setAudienceModalVisible(false)}
+      >
+        <View style={styles.iconGeneralCircle}>
+          <Volume2 size="20" color="#0E79B6" />
+        </View>
+        <Text style={styles.modalTitle}>{selectedOption}</Text>
+        <Text style={styles.subtitle}>Select audience for this post.</Text>
 
-          {selectedOption === 'Poll' && (
-            <View>
-              <Text style={styles.quesLabel}>Question</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter"
-                value={question}
-                onChangeText={setQuestion}
-              />
+        <AudienceDropdown
+          selectAll={selectAll}
+          sectionSelection={sectionSelection}
+          handleSelectAllChange={handleSelectAllChange}
+          setSectionSelection={setSectionSelection}
+        />
 
-              <Text style={[styles.quesLabel]}>Options</Text>
-              {pollOptions.map((opt, idx) => (
-                <View key={idx} style={styles.optionRow}>
-                  <Text style={styles.optionNumber}>
-                    {String(idx + 1).padStart(2, '0')}
-                  </Text>
-
-                  <TextInput
-                    style={[styles.optionsInput, { flex: 1, marginLeft: 8 }]}
-                    placeholder="Enter"
-                    value={opt}
-                    onChangeText={text => handleOptionChange(text, idx)}
-                  />
-
-                  {pollOptions.length > 2 && (
-                    <TouchableOpacity
-                      style={{ marginLeft: 3 }}
-                      onPress={() => removeOption(idx)}
-                    >
-                      <Trash size="16" color="red" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-
-              {/* Add option */}
-              <TouchableOpacity
-                onPress={addNewOption}
-                style={{ marginBottom: 15 }}
-              >
-                <Text style={styles.addOption}>+ Add new option</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <Text style={styles.subjectText}>Permissions</Text>
+        {!selectAll && sectionSelection === 'departments' && (
           <Dropdown
-            style={styles.dropdown}
-            data={permissionOptions}
+            style={styles.dropdownDept}
+            data={departmentNames.map(d => ({
+              label: d.label,
+              value: String(d.id),
+            }))}
             labelField="label"
             valueField="value"
-            placeholder="Select permissions"
-            value={selectedPermissions}
+            placeholder="Select Departments"
+            value={selectedAudience.departments}
             onChange={item =>
-              setSelectedPermissions(prev =>
-                prev.includes(item.value)
-                  ? prev.filter(i => i !== item.value)
-                  : [...prev, item.value],
+              handleDepartmentsChange(
+                selectedAudience.departments.includes(item.value)
+                  ? selectedAudience.departments.filter(v => v !== item.value)
+                  : [...selectedAudience.departments, item.value],
               )
             }
-            renderItem={item => {
-              const isSelected = selectedPermissions.includes(item.value);
-              return (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: 10,
-                  }}
-                >
-                  <Text style={{ flex: 1 }}>{item.label}</Text>
-                  {isSelected ? (
-                    <CheckSquare size={20} color="#2196F3" />
-                  ) : (
-                    <Square size={20} color="#ccc" />
-                  )}
-                </View>
-              );
-            }}
+            renderItem={item => (
+              <Text style={{ padding: 8 }}>{item.label}</Text>
+            )}
           />
+        )}
 
-          <View style={styles.imgIconBlock}>
-            {selectedOption != 'Poll' ? (
-              <ImageIcon onPress={openImageEditor} size="20" color="gray" />
-            ) : (
-              ''
+        {!selectAll && sectionSelection === 'individuals' && (
+          <Dropdown
+            style={styles.dropdownDept}
+            data={names.map(u => ({
+              label: `${u.first_name} ${u.last_name}`,
+              value: String(u.id),
+            }))}
+            labelField="label"
+            valueField="value"
+            placeholder="Select Users"
+            value={selectedAudience.individuals}
+            onChange={item =>
+              handleIndividualsChange(
+                selectedAudience.individuals.includes(item.value)
+                  ? selectedAudience.individuals.filter(v => v !== item.value)
+                  : [...selectedAudience.individuals, item.value],
+              )
+            }
+            renderItem={item => (
+              <Text style={{ padding: 8 }}>{item.label}</Text>
             )}
-            <TouchableOpacity onPress={() => setShowPicker(true)}>
-              <Clock4 size={20} color="gray" />
-            </TouchableOpacity>
+          />
+        )}
 
-            {showPicker && (
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={changePostDate}
-              />
-            )}
-          </View>
-
-          <TouchableOpacity
-            style={styles.confirmButton}
-            onPress={() => {
-              handleCreate();
-            }}
-          >
-            <Text style={styles.confirmText}>Confirm</Text>
-          </TouchableOpacity>
-        </AppModal>
-
-        {/* --- Modal 4: Upload Image --- */}
-        <AppModal
-          visible={imgModalVisible}
-          onClose={() => setImgModalVisible(false)}
+        {/* Chips */}
+        <ScrollView
+          style={{ maxHeight: 100 }}
+          contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap' }}
+          nestedScrollEnabled
         >
-          <View style={styles.iconGeneralCircle}>
-            <ImageIcon size={24} color="#0E79B6" />
-          </View>
-          <Text style={styles.modalTitle}>Upload Image</Text>
-          <Text style={styles.subtitle}>
-            Upload a JPG, PNG, or GIF (max. 800×400px)
-          </Text>
+          {selectedParent.map(value => {
+            const user = names.find(u => String(u.id) === value);
 
-          <TouchableOpacity
-            style={styles.uploadBox}
-            onPress={handleImageUpload}
-          >
-            <Upload size={28} color="#888" />
-            <Text style={styles.uploadText}>
-              <Text style={styles.uploadLink}>Click to upload</Text> or drag and
-              drop
-            </Text>
-            <Text style={styles.uploadHint}>SVG, PNG, JPG or GIF</Text>
+            if (!user) {
+              return null;
+            }
+
+            return (
+              <View
+                key={value}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: 6,
+                  margin: 4,
+                  backgroundColor: '#eee',
+                  borderRadius: 16,
+                }}
+              >
+                <Text style={{ marginRight: 6 }}>
+                  {`${user.first_name} ${user.last_name}`}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => handleRemoveSelectedParent(value)}
+                >
+                  <Text style={{ color: 'red' }}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirmAudience}
+        >
+          <Text style={styles.confirmText}>Confirm</Text>
+        </TouchableOpacity>
+      </AppModal>
+
+      {/* --- Modal 3: Post Form --- */}
+      <AppModal
+        visible={postModalVisible}
+        onClose={() => setPostModalVisible(false)}
+      >
+        <View style={styles.iconGeneralCircle}>
+          <ClipboardList size="20" color="#0E79B6" />
+        </View>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.modalTitle}>{selectedOption}</Text>
+            <Text style={styles.subtitle}>Fill in the details below</Text>
+          </View>
+        </View>
+
+        {selectedOption == 'Praise' ? (
+          <View>
+            <View style={{ marginVertical: 10 }}>
+              <Text style={styles.subjectText}>Praise To</Text>
+              <Dropdown
+                style={{
+                  height: 50,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  paddingHorizontal: 10,
+                  borderColor: '#ccc',
+                  marginBottom: 8,
+                }}
+                data={names.map(u => ({
+                  label: `${u.first_name} ${u.last_name}`,
+                  value: String(u.id),
+                }))}
+                labelField="label"
+                valueField="value"
+                placeholder="Select User"
+                value={praiseTo}
+                onChange={item => {
+                  setPraiseTo(item.value);
+                }}
+                renderItem={item => (
+                  <Text style={{ padding: 8 }}>{item.label}</Text>
+                )}
+              />
+            </View>
+          </View>
+        ) : (
+          ''
+        )}
+
+        {selectedOption != 'Poll' ? (
+          <View>
+            <Text style={styles.subjectText}>Subject</Text>
+            <TextInput
+              value={subject}
+              onChangeText={setSubject}
+              placeholder="Enter subject"
+              style={styles.input}
+            />
+
+            <Text style={styles.subjectText}>Description</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Enter description"
+              multiline
+              style={[styles.input, styles.textarea]}
+            />
+          </View>
+        ) : (
+          ''
+        )}
+
+        {selectedOption === 'Poll' && (
+          <View>
+            <Text style={styles.quesLabel}>Question</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter"
+              value={question}
+              onChangeText={setQuestion}
+            />
+
+            <Text style={[styles.quesLabel]}>Options</Text>
+            {pollOptions.map((opt, idx) => (
+              <View key={idx} style={styles.optionRow}>
+                <Text style={styles.optionNumber}>
+                  {String(idx + 1).padStart(2, '0')}
+                </Text>
+
+                <TextInput
+                  style={[styles.optionsInput, { flex: 1, marginLeft: 8 }]}
+                  placeholder="Enter"
+                  value={opt}
+                  onChangeText={text => handleOptionChange(text, idx)}
+                />
+
+                {pollOptions.length > 2 && (
+                  <TouchableOpacity
+                    style={{ marginLeft: 3 }}
+                    onPress={() => removeOption(idx)}
+                  >
+                    <Trash size="16" color="red" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+
+            {/* Add option */}
+            <TouchableOpacity
+              onPress={addNewOption}
+              style={{ marginBottom: 15 }}
+            >
+              <Text style={styles.addOption}>+ Add new option</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={styles.subjectText}>Permissions</Text>
+        <Dropdown
+          style={styles.dropdown}
+          data={permissionOptions}
+          labelField="label"
+          valueField="value"
+          placeholder="Select permissions"
+          value={selectedPermissions}
+          onChange={item =>
+            setSelectedPermissions(prev =>
+              prev.includes(item.value)
+                ? prev.filter(i => i !== item.value)
+                : [...prev, item.value],
+            )
+          }
+          renderItem={item => {
+            const isSelected = selectedPermissions.includes(item.value);
+            return (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: 10,
+                }}
+              >
+                <Text style={{ flex: 1 }}>{item.label}</Text>
+                {isSelected ? (
+                  <CheckSquare size={20} color="#2196F3" />
+                ) : (
+                  <Square size={20} color="#ccc" />
+                )}
+              </View>
+            );
+          }}
+        />
+
+        <View style={styles.imgIconBlock}>
+          {selectedOption != 'Poll' ? (
+            <ImageIcon onPress={openImageEditor} size="20" color="gray" />
+          ) : (
+            ''
+          )}
+          <TouchableOpacity onPress={() => setShowPicker(true)}>
+            <Clock4 size={20} color="gray" />
           </TouchableOpacity>
 
-          {selectedImage && (
-            <Image
-              source={{ uri: selectedImage }}
-              style={{
-                width: 120,
-                height: 120,
-                marginTop: 10,
-                borderRadius: 8,
-              }}
+          {showPicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={changePostDate}
             />
           )}
+        </View>
 
-          <TouchableOpacity
-            style={styles.confirmButton}
-            onPress={() => setImgModalVisible(false)}
-          >
-            <Text style={styles.confirmText}>Confirm</Text>
-          </TouchableOpacity>
-        </AppModal>
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={() => {
+            handleCreate();
+          }}
+        >
+          <Text style={styles.confirmText}>Confirm</Text>
+        </TouchableOpacity>
+      </AppModal>
+
+      {/* --- Modal 4: Upload Image --- */}
+      <AppModal
+        visible={imgModalVisible}
+        onClose={() => setImgModalVisible(false)}
+      >
+        <View style={styles.iconGeneralCircle}>
+          <ImageIcon size={24} color="#0E79B6" />
+        </View>
+        <Text style={styles.modalTitle}>Upload Image</Text>
+        <Text style={styles.subtitle}>
+          Upload a JPG, PNG, or GIF (max. 800×400px)
+        </Text>
+
+        <TouchableOpacity style={styles.uploadBox} onPress={handleImageUpload}>
+          <Upload size={28} color="#888" />
+          <Text style={styles.uploadText}>
+            <Text style={styles.uploadLink}>Click to upload</Text> or drag and
+            drop
+          </Text>
+          <Text style={styles.uploadHint}>SVG, PNG, JPG or GIF</Text>
+        </TouchableOpacity>
+
+        {selectedImage && (
+          <Image
+            source={{ uri: selectedImage }}
+            style={{
+              width: 120,
+              height: 120,
+              marginTop: 10,
+              borderRadius: 8,
+            }}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={() => setImgModalVisible(false)}
+        >
+          <Text style={styles.confirmText}>Confirm</Text>
+        </TouchableOpacity>
+      </AppModal>
+
 
       {/* Loading + Error */}
       {isLoading && <ActivityIndicator size="large" color="#2196F3" />}
@@ -966,10 +973,23 @@ const handleCreate = async () => {
       )}
 
       {/* Posts Feed */}
-      <FlatList
+      {/* <FlatList
         data={records}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => <PostCard announcement={item} />}
+      /> */}
+      <RefreshableList
+        data={records}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({ item }) => <PostCard announcement={item} />}
+        onRefreshData={reloadPosts} // ✅ will refresh on pull
+        ListEmptyComponent={
+          !isLoading ? (
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>
+              No posts available
+            </Text>
+          ) : null
+        }
       />
     </View>
   );
