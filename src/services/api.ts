@@ -127,6 +127,20 @@ export const apiClient = {
 
   delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
     api.delete(url, config).then(res => res.data),
+
+   postForm: async <T = any>(
+    url: string,
+    formData: FormData,
+    config?: AxiosRequestConfig,
+  ): Promise<T> => {
+    return apiClient.post<T>(url, formData, {
+      ...(config || {}),
+      headers: {
+        ...(config?.headers || {}),
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 export default api;

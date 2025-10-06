@@ -41,4 +41,10 @@ export const API_ROUTES = {
   CREATE_LEAVE: '/api/leaves/request',
   WITHDRAW_LEAVE: '/api/leaves/withdraw/status',
   UPDATE_LEAVE: '/api/leaves/request',
+
+  //profile
+  UPLOAD_COVER_IMAGE: '/api/users/cover/image/upload',
+  REMOVE_COVER_IMAGE: '/api/users/cover/image/remove',
+  UPLOAD_PROFILE_IMAGE: '/api/users/image/upload',
+  REMOVE_PROFILE_IMAGE: '/api/users/image/remove',
 };

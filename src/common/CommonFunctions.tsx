@@ -1,3 +1,5 @@
+import { PermissionsAndroid, Platform, Alert, Linking } from 'react-native';
+
 export type User = {
   first_name?: string | null;
   last_name?: string | null;
@@ -71,4 +73,50 @@ export const convertSecondsToHoursMinutes = (seconds: number): string => {
   const hourLabel = hrs === 1 ? "hr" : "hrs";
 
   return `${paddedHours}:${paddedMinutes} ${hourLabel}`;
+};
+
+export const requestCameraAndGalleryPermission = async (): Promise<boolean> => {
+  if (Platform.OS === 'ios') return true;
+
+  try {
+    const granted = await PermissionsAndroid.requestMultiple([
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES, // Android 13+
+      // PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+      // PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+    ]);
+    const denied = Object.values(granted).filter(
+      status => status !== PermissionsAndroid.RESULTS.GRANTED,
+    );
+
+    if (denied.length === 0) {
+      return true;
+    }
+
+    // If user selected "Never ask again"
+    if (denied.includes(PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN)) {
+      Alert.alert(
+        'Permission Blocked',
+        'Camera and storage access are permanently denied. Please enable them in Settings.',
+        [
+          {
+            text: 'Go to Settings',
+            onPress: () => Linking.openSettings(),
+          },
+          { text: 'Cancel', style: 'cancel' },
+        ],
+      );
+    } else {
+      Alert.alert(
+        'Permission Required',
+        'Camera and storage permissions are needed to upload your image.',
+      );
+    }
+
+    return false;
+  } catch (err) {
+    console.warn('Permission Error:', err);
+    Alert.alert('Error', 'Unable to request permissions.');
+    return false;
+  }
 };

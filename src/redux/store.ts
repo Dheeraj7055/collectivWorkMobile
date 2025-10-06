@@ -7,6 +7,7 @@ import announcementReducer from './slices/announcementSlice';
 import departmentReducer from './slices/departmentSlice';
 import leaveReducer from './slices/leaveSlice';
 import locationReducer from './slices/locationSlices';
+import profileScreenReducer from './slices/profileScreenSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,7 +17,8 @@ export const store = configureStore({
     announcements: announcementReducer,
     department: departmentReducer,
     leave: leaveReducer,
-    location: locationReducer
+    location: locationReducer,
+    profileScreen: profileScreenReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

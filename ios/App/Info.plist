@@ -54,5 +54,15 @@
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app requires your location even in background.</string>
 
-</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to your camera to take profile or cover photos.</string>
+
+	<!-- 🖼️ Photo Library (Gallery) permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to select and upload images.</string>
+
+	<!-- 🖼️ Add Photos to Library (optional if you save back to gallery) -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app needs permission to save edited or cropped images to your photo library.</string>
+	</dict>
 </plist>

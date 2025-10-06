@@ -27,6 +27,7 @@ import {
   Share,
   User,
 } from 'lucide-react-native';
+import ImagePreviewScreen from '@/screens/ImagePreviewScreen';
 
 const ChatScreen = () => <Text>Chat Screen</Text>;
 
@@ -42,6 +43,7 @@ export type AppStackParamList = {
   MainTabs: undefined;
   Bookmarks: undefined;
   LeaveRequestDetail: { leave_id: string | number };
+  ImagePreviewScreen: { imageUrl: string };
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -56,6 +58,7 @@ const titleMap: Record<string, string> = {
   Profile: 'My Profile',
   Bookmarks: 'Bookmarks',
   LeaveRequestDetail: 'Leave Details',
+  // ImagePreviewScreen: 'Image Preview'
 };
 
 export const ScreenWithHeader = ({
@@ -156,6 +159,8 @@ export const AppNavigator: React.FC = () => {
           </ScreenWithHeader>
         )}
       </Stack.Screen>
+
+      <Stack.Screen name="ImagePreviewScreen" component={ImagePreviewScreen} />
     </Stack.Navigator>
   );
 };
