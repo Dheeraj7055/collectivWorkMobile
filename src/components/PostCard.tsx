@@ -8,6 +8,8 @@ import {
   Dimensions,
   TextInput,
   FlatList,
+  Alert,
+  ScrollView,
 } from 'react-native';
 import Video from 'react-native-video';
 import ImageViewing from 'react-native-image-viewing';
@@ -17,17 +19,31 @@ import Svg, { Path, Rect, SvgUri } from 'react-native-svg';
 import { apiClient } from '@/services/api';
 import { API_ROUTES } from '@/constants/apiRoutes';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAnnouncements } from '@/redux/slices/announcementSlice';
+import {
+  deletePostComment,
+  fetchAnnouncements,
+  updatePostComment,
+} from '@/redux/slices/announcementSlice';
 import { AppDispatch, RootState } from '@/redux/store';
 import { encodeData } from '@/utils/cryptoHelpers';
 import { fetchUserData } from '@/redux/slices/userSlice';
 import { Announcement, CommentItem, MediaItem } from '@/types/announcement';
-import { Award, Gift, Star, ThumbsUp } from 'lucide-react-native';
+import {
+  Award,
+  Bookmark,
+  BookmarkCheck,
+  Gift,
+  Pencil,
+  Star,
+  ThumbsUp,
+} from 'lucide-react-native';
 import FastImage from 'react-native-fast-image';
 import PraiseTrophy from '../../assets/images/praise-trophy.svg';
 
 import AppModal from '@/common/AppModal';
-import { getInitials } from '@/common/CommonFunctions';
+import { getFullName, getInitials } from '@/common/CommonFunctions';
+import Toast from 'react-native-toast-message';
+import { Menu } from 'react-native-paper';
 
 const { width, height } = Dimensions.get('window');
 
@@ -67,6 +83,19 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   const [postComments, setPostComments] = useState(
     announcement?.Comments || [],
   );
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editedText, setEditedText] = useState<string>('');
+  const [showReactionsFor, setShowReactionsFor] = useState<
+    string | number | null
+  >(null);
+  const [commentPayload, setCommentPayload] = useState<any>(null);
+  const [showReactionModal, setShowReactionModal] = useState(false);
+  const [currentReactionAnnouncement, setCurrentReactionAnnouncement] =
+    useState<any>(null);
+  const [selectedReactionTab, setSelectedReactionTab] = useState<
+    'all' | string
+  >('all');
+  const [visibleMenuId, setVisibleMenuId] = useState<number | null>(null);
 
   // Send Comment
   const handleSendComment = async () => {
@@ -116,7 +145,6 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
     }
   };
 
-
   const reactions = [
     {
       name: 'Like',
@@ -161,6 +189,248 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
       emojiFont: '#1a707e',
     },
   ];
+
+  const handleReactionModal = (announcement: any) => {
+    if (announcement?.AnnouncementLikes?.length > 0) {
+      setCurrentReactionAnnouncement(announcement);
+      setShowReactionModal(true);
+    }
+  };
+
+  const openMenu = (id: number) => setVisibleMenuId(id);
+  const closeMenu = () => setVisibleMenuId(null);
+
+  // Start editing a comment
+  const handleStartEdit = (comment: any) => {
+    setEditingCommentId(comment.id);
+    setEditedText(comment.comment);
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditedText('');
+  };
+
+  // Save edited comment
+  const handleSaveEdit = async (commentId: string | number) => {
+    if (!editedText.trim()) return;
+
+    const result = await dispatch(
+      updatePostComment({
+        comment_id: commentId,
+        comment: editedText.trim(),
+      }),
+    );
+
+    if (updatePostComment.fulfilled.match(result)) {
+      Toast.show({ type: 'success', text1: 'Comment updated' });
+      setEditingCommentId(null);
+      setEditedText('');
+    } else {
+      Toast.show({ type: 'error', text1: 'Failed to update comment' });
+    }
+  };
+
+  const handleDeleteComment = async (comment: any) => {
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await dispatch(
+              deletePostComment({ comment_id: comment.id }),
+            );
+
+            if (deletePostComment.fulfilled.match(result)) {
+              setPostComments(prev => prev.filter(c => c.id !== comment.id));
+            } else {
+              Toast.show({
+                type: 'error',
+                text1: 'Failed to delete comment',
+              });
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleCommentLikeColor = (comment: any) => {
+    const myLike = comment?.CommentLikes?.find(
+      (l: any) => l.liked_by === userData?.id,
+    );
+    if (myLike && myLike.reactions) {
+      const reactionColor =
+        reactions.find(
+          r => r.name.toLowerCase() === myLike.reactions.toLowerCase(),
+        )?.emojiFont || '#0E79B6';
+      return reactionColor;
+    }
+    return '#00000099';
+  };
+
+  const handleCommentLike = async (commentItem: any, announcement: any) => {
+    const isLiked = commentItem?.CommentLikes?.find(
+      (l: any) => l.liked_by === userData?.id,
+    );
+
+    const payload = isLiked
+      ? {
+          announcement_id: announcement.id,
+          comment_id: commentItem.id,
+          reactions: '', // remove
+        }
+      : {
+          announcement_id: announcement.id,
+          comment_id: commentItem.id,
+          reactions: 'Like', // add
+        };
+
+    if (
+      commentPayload &&
+      JSON.stringify(payload) === JSON.stringify(commentPayload)
+    )
+      return;
+
+    setCommentPayload(payload);
+
+    try {
+      const encoded = encodeData(payload);
+      const res = await apiClient.post(API_ROUTES.COMMENTS_LIKE, {
+        payload: encoded,
+      });
+
+      if (res?.success) {
+        setPostComments(prev =>
+          prev.map(c => {
+            if (c.id !== commentItem.id) return c;
+
+            const updatedLikes = (c.CommentLikes || []).filter(
+              l => l.liked_by !== userData?.id,
+            );
+            if (!isLiked) {
+              updatedLikes.push({ liked_by: userData?.id, reactions: 'Like' });
+            }
+
+            // ✅ Preserve previous counts and update only your reaction
+            const updatedReactionsCount = { ...(c.reactions_count || {}) };
+
+            // If removing like
+            if (isLiked) {
+              const prevReaction = isLiked.reactions || 'Like';
+              if (updatedReactionsCount[prevReaction] > 1)
+                updatedReactionsCount[prevReaction] -= 1;
+              else delete updatedReactionsCount[prevReaction];
+            }
+            // If adding like
+            else {
+              updatedReactionsCount['Like'] =
+                (updatedReactionsCount['Like'] || 0) + 1;
+            }
+
+            return {
+              ...c,
+              CommentLikes: updatedLikes,
+              reactions_count: updatedReactionsCount,
+            };
+          }),
+        );
+
+        setShowReactionsFor(null);
+        Toast.show({ type: 'success', text1: 'Reaction updated successfully' });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: res.message || 'Failed to update reaction',
+        });
+      }
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Something went wrong' });
+    }
+  };
+
+  const handleCommentEmojiClick = async (
+    reaction: any,
+    commentItem: any,
+    announcement: any,
+  ) => {
+    const payload = {
+      announcement_id: announcement.id,
+      comment_id: commentItem.id,
+      reactions: reaction.name,
+    };
+
+    if (
+      commentPayload &&
+      JSON.stringify(payload) === JSON.stringify(commentPayload)
+    )
+      return;
+
+    setCommentPayload(payload);
+
+    try {
+      const encoded = encodeData(payload);
+      const res = await apiClient.post(API_ROUTES.COMMENTS_LIKE, {
+        payload: encoded,
+      });
+
+      if (res?.success) {
+        setPostComments(prev =>
+          prev.map(c => {
+            if (c.id !== commentItem.id) return c;
+
+            const updatedLikes = (c.CommentLikes || []).filter(
+              l => l.liked_by !== userData?.id,
+            );
+            updatedLikes.push({
+              liked_by: userData?.id,
+              reactions: reaction.name,
+            });
+
+            // ✅ Preserve all others' counts
+            const updatedReactionsCount = { ...(c.reactions_count || {}) };
+
+            // Find previous reaction of current user
+            const prevReaction = c.CommentLikes?.find(
+              l => l.liked_by === userData?.id,
+            )?.reactions;
+
+            // Decrease old reaction count
+            if (prevReaction && updatedReactionsCount[prevReaction]) {
+              updatedReactionsCount[prevReaction] -= 1;
+              if (updatedReactionsCount[prevReaction] <= 0)
+                delete updatedReactionsCount[prevReaction];
+            }
+
+            // Increase new one
+            updatedReactionsCount[reaction.name] =
+              (updatedReactionsCount[reaction.name] || 0) + 1;
+
+            return {
+              ...c,
+              CommentLikes: updatedLikes,
+              reactions_count: updatedReactionsCount,
+            };
+          }),
+        );
+
+        setShowReactionsFor(null);
+        Toast.show({ type: 'success', text1: 'Reaction updated successfully' });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: res.message || 'Failed to update reaction',
+        });
+      }
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Something went wrong' });
+    }
+  };
 
   const totalReactions = Object.values(
     announcement.reactions_count || {},
@@ -379,6 +649,61 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
     }
   };
 
+  const groupReactionsByType = (reactions: any[]) => {
+    const grouped: Record<string, any[]> = {};
+    reactions.forEach(r => {
+      const type = r?.reaction_name || 'Like';
+      if (!grouped[type]) grouped[type] = [];
+      grouped[type].push(r);
+    });
+    return grouped;
+  };
+
+  const getReactionEmoji = (type: string) => {
+    const matched = reactions.find(r => r.name === type);
+    return (
+      matched?.emoji ||
+      'https://hr-screening.s3.ap-south-1.amazonaws.com/test%20open%20files%20upload/likedIcon.svg_1740128322035'
+    );
+  };
+
+  const handleBookmark = async (announcement: any) => {
+    const payload = { announcement_id: announcement?.id };
+    const encoded = encodeData(payload);
+
+    try {
+      const isBookmarked = announcement?.bookmarked_by_user_ids?.includes(
+        userData?.id,
+      );
+
+      const endpoint = isBookmarked
+        ? API_ROUTES.REMOVE_BOOKMARK_POST
+        : API_ROUTES.BOOKMARK_POST;
+      const res = await apiClient.put(endpoint, { payload: encoded });
+
+      if (res?.success) {
+        Toast.show({
+          type: 'success',
+          text1: isBookmarked ? 'Bookmark removed' : 'Post bookmarked',
+        });
+
+        dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
+
+        closeMenu();
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: res?.data?.message || 'Failed to update bookmark',
+        });
+      }
+    } catch (err: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error updating bookmark',
+      });
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchUserData());
   }, [dispatch]);
@@ -402,6 +727,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
         visible={commentModalVisible}
         onClose={() => setCommentModalVisible(false)}
       >
+        {/* Header */}
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Comments</Text>
           <TouchableOpacity onPress={() => setCommentModalVisible(false)}>
@@ -409,105 +735,201 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
           </TouchableOpacity>
         </View>
 
-        {/* <FlatList
-          data={postComments}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.commentItem}>
-              {item?.User?.image_url ? (
-                <Image
-                  source={{ uri: item.User.image_url }}
-                  style={styles.avatar}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.avatarPlaceholder,
-                    { backgroundColor: item.User?.profile_color || '#ddd' },
-                  ]}
-                >
-                  <Text style={styles.avatarText}>
-                    {`${item.User?.first_name?.[0] || ''}${
-                      item.User?.last_name?.[0] || ''
-                    }`}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.commentContent}>
-                <Text style={styles.commentName}>
-                  {item.User?.first_name} {item.User?.last_name}
-                </Text>
-                <Text style={styles.commentText}>{item.comment}</Text>
-              </View>
-            </View>
-          )}
-          style={styles.commentListBlock}
-        /> */}
-
+        {/* Comment List */}
         <FlatList
           data={postComments}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.commentItem}>
-              {/* Avatar */}
-              {item?.User?.image_url ? (
-                <Image
-                  source={{ uri: item.User.image_url }}
-                  style={styles.avatar}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.avatarPlaceholder,
-                    { backgroundColor: item.User?.profile_color || '#ddd' },
-                  ]}
-                >
-                  <Text style={styles.avatarText}>
-                    {`${item.User?.first_name?.[0] || ''}${
-                      item.User?.last_name?.[0] || ''
-                    }`}
-                  </Text>
-                </View>
-              )}
-
-              {/* Content */}
-              <View style={styles.commentBody}>
-                {/* Name + Role + Time */}
-                <View style={styles.commentHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.commentName}>
-                      {item.User?.first_name} {item.User?.last_name}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          renderItem={({ item }) => {
+            const isEditing = editingCommentId === item.id;
+            const isUserComment = item?.User?.id === userData?.id; // only show edit for own comments
+            return (
+              <View style={styles.commentItem}>
+                {/* Avatar */}
+                {item?.User?.image_url ? (
+                  <Image
+                    source={{ uri: item.User.image_url }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.avatarPlaceholder,
+                      { backgroundColor: item.User?.profile_color || '#ddd' },
+                    ]}
+                  >
+                    <Text style={styles.avatarText}>
+                      {`${item.User?.first_name?.[0] || ''}${
+                        item.User?.last_name?.[0] || ''
+                      }`}
                     </Text>
-                    {/* <Text style={styles.commentRole}>{item.User.designation}</Text> */}
                   </View>
-                  <Text style={styles.commentTime}>
-                    {item.updated_at
-                      ? moment(item.updated_at).fromNow()
-                      : 'now'}
-                  </Text>
-                </View>
+                )}
 
-                {/* Comment Text */}
-                <Text style={styles.commentText}>{item.comment}</Text>
+                {/* Body */}
+                <View style={styles.commentBody}>
+                  {/* Header */}
+                  <View
+                    style={[styles.commentHeader, { alignItems: 'center' }]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.commentName}>
+                        {item.User?.first_name} {item.User?.last_name}
+                      </Text>
+                    </View>
 
-                {/* Reactions Row */}
-                <View style={styles.commentFooter}>
-                  <Text style={styles.commentAction}>Like</Text>
-                  {/* <View style={styles.reactionsRow}>
-                    <Text style={styles.emoji}>👍</Text>
-                    <Text style={styles.emoji}>❤️</Text>
-                    <Text style={styles.emoji}>👏</Text>
-                    <Text style={styles.likeCount}>18</Text>
-                  </View> */}
-                  {/* <Text style={styles.commentAction}>Reply</Text>
-                  <Text style={styles.replyCount}>12 Replies</Text> */}
+                    {/* Time + Edit Button */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Text style={styles.commentTime}>
+                        {item.updated_at
+                          ? moment(item.updated_at).fromNow()
+                          : 'now'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Comment Text or Edit Mode */}
+                  {isEditing ? (
+                    <>
+                      <TextInput
+                        style={styles.editInput}
+                        value={editedText}
+                        onChangeText={setEditedText}
+                        placeholder="Edit your comment..."
+                        placeholderTextColor="#888"
+                        multiline
+                      />
+
+                      <View style={styles.editActions}>
+                        <TouchableOpacity
+                          style={[
+                            styles.saveBtn,
+                            !editedText.trim() && styles.disabledSendButton,
+                          ]}
+                          disabled={!editedText.trim()}
+                          onPress={() => handleSaveEdit(item.id)}
+                        >
+                          <Text style={styles.confirmText}>Save</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.cancelBtn}
+                          onPress={handleCancelEdit}
+                        >
+                          <Text style={styles.confirmText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : (
+                    <Text style={styles.commentText}>{item.comment}</Text>
+                  )}
+
+                  {/* Footer */}
+                  <View style={styles.commentFooter}>
+                    {/* 🔹 Like Button */}
+                    <TouchableOpacity
+                      onPress={() => handleCommentLike(item, announcement)}
+                      onLongPress={() => setShowReactionsFor(Number(item.id))}
+                      delayLongPress={250}
+                    >
+                      <Text
+                        style={[
+                          styles.commentAction,
+                          { color: handleCommentLikeColor(item) },
+                        ]}
+                      >
+                        Like
+                      </Text>
+                    </TouchableOpacity>
+
+                    {item.reactions_count &&
+                      Object.keys(item.reactions_count).length > 0 && (
+                        <View style={styles.reactionsContainer}>
+                          {Object.entries(item.reactions_count).map(
+                            ([emojiName, likedByCount], index) => {
+                              const matchedReaction = reactions.find(
+                                r =>
+                                  r.name.toLowerCase() ===
+                                  emojiName.toLowerCase(),
+                              );
+                              return (
+                                <View
+                                  key={index}
+                                  style={styles.reactionCountItem}
+                                >
+                                  {matchedReaction && (
+                                    <SvgUri
+                                      uri={matchedReaction.emoji}
+                                      width={16}
+                                      height={16}
+                                    />
+                                  )}
+                                  <Text style={styles.reactionCountText}>
+                                    {likedByCount}
+                                  </Text>
+                                </View>
+                              );
+                            },
+                          )}
+                        </View>
+                      )}
+
+                    {/* Reaction Picker (on long press) */}
+                    {showReactionsFor === item.id && (
+                      <View style={styles.reactionPicker}>
+                        {reactions.map(reaction => (
+                          <TouchableOpacity
+                            key={reaction.name}
+                            onPress={() =>
+                              handleCommentEmojiClick(
+                                reaction,
+                                item,
+                                announcement,
+                              )
+                            }
+                          >
+                            <SvgUri
+                              uri={reaction.emoji}
+                              width={24}
+                              height={24}
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* 🔹 Edit / Delete Buttons for User’s Own Comment */}
+                    {isUserComment && !isEditing && (
+                      <>
+                        <TouchableOpacity onPress={() => handleStartEdit(item)}>
+                          <Text style={styles.commentAction}>Edit</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() => handleDeleteComment(item)}
+                        >
+                          <Text
+                            style={[styles.commentAction, { color: 'red' }]}
+                          >
+                            Delete
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            );
+          }}
           style={styles.commentListBlock}
         />
 
+        {/* Comment Input Box */}
         <View style={styles.commentBox}>
           {userData?.image_url ? (
             <Image source={{ uri: userData.image_url }} style={styles.avatar} />
@@ -534,23 +956,11 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
             <TouchableOpacity onPress={() => console.log('Open emoji picker')}>
               <Text style={{ fontSize: 20, marginRight: 6 }}>😊</Text>
             </TouchableOpacity>
-
-            {/* <TouchableOpacity
-              style={[
-                styles.sendButton,
-                !newComment.trim() && styles.disabledSendButton,
-              ]}
-              disabled={!newComment.trim()}
-              onPress={handleSendComment}
-            >
-              <Text style={{ color: '#fff' }}>➤</Text>
-            </TouchableOpacity> */}
           </View>
         </View>
 
-        {/* Footer Buttons */}
+        {/* Footer Button */}
         <TouchableOpacity
-          // style={styles.confirmButton}
           style={[
             styles.sendButton,
             !newComment.trim() && styles.disabledSendButton,
@@ -560,6 +970,131 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
         >
           <Text style={styles.confirmText}>Comment</Text>
         </TouchableOpacity>
+      </AppModal>
+
+      <AppModal
+        visible={showReactionModal}
+        onClose={() => setShowReactionModal(false)}
+      >
+        <View>
+          {/* Header */}
+          <Text style={styles.modalTitle}>Reactions</Text>
+
+          {/* Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flexDirection: 'row', marginVertical: 10 }}
+          >
+            <TouchableOpacity
+              style={[
+                styles.tabButton,
+                selectedReactionTab === 'all' && styles.tabButtonActive,
+              ]}
+              onPress={() => setSelectedReactionTab('all')}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  selectedReactionTab === 'all' && styles.tabTextActive,
+                ]}
+              >
+                All
+              </Text>
+            </TouchableOpacity>
+
+            {Object.keys(
+              groupReactionsByType(
+                currentReactionAnnouncement?.AnnouncementLikes || [],
+              ),
+            ).map(reactionType => (
+              <TouchableOpacity
+                key={reactionType}
+                style={[
+                  styles.tabButton,
+                  selectedReactionTab === reactionType &&
+                    styles.tabButtonActive,
+                ]}
+                onPress={() => setSelectedReactionTab(reactionType)}
+              >
+                <SvgUri
+                  uri={getReactionEmoji(reactionType)}
+                  width={20}
+                  height={20}
+                />
+                <Text
+                  style={[
+                    styles.imageTabText,
+                    selectedReactionTab === reactionType &&
+                      styles.tabTextActive,
+                  ]}
+                >
+                  {reactionType}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Reaction List */}
+          <ScrollView style={{ maxHeight: 400 }}>
+            {(selectedReactionTab === 'all'
+              ? currentReactionAnnouncement?.AnnouncementLikes || []
+              : groupReactionsByType(
+                  currentReactionAnnouncement?.AnnouncementLikes || [],
+                )[selectedReactionTab] || []
+            ).map((reaction: any) => (
+              <View
+                key={reaction.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 8,
+                }}
+              >
+                {/* Profile */}
+                {reaction?.User?.image_url ? (
+                  <Image
+                    source={{ uri: reaction?.User?.image_url }}
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.avatarPlaceholder,
+                      {
+                        backgroundColor:
+                          reaction?.User?.profile_color || '#ccc',
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarText}>
+                      {getInitials(reaction?.User)}
+                    </Text>
+                  </View>
+                )}
+
+                {/* Name + Designation */}
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.userName}>
+                    {reaction?.User ? getFullName(reaction?.User) : '-'}
+                  </Text>
+                  <Text style={styles.userDesignation}>
+                    {reaction?.User?.client_name
+                      ? `at ${reaction.User.client_name}`
+                      : ''}
+                  </Text>
+                </View>
+
+                {/* Reaction Icon */}
+                <SvgUri
+                  uri={getReactionEmoji(reaction?.reaction_name)}
+                  width={18}
+                  height={18}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       </AppModal>
 
       <View key={id} style={styles.card}>
@@ -658,7 +1193,74 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
           </View>
 
           {/* Menu */}
-          <Text style={styles.menu}>⋮</Text>
+          <View style={{ position: 'relative', zIndex: 10 }}>
+            <Menu
+              visible={visibleMenuId === announcement.id}
+              onDismiss={closeMenu}
+              anchor={
+                <View collapsable={false}>
+                  <TouchableOpacity
+                    onPress={() => openMenu(Number(announcement.id))}
+                    style={{ padding: 4 }}
+                  >
+                    <Text style={styles.menu}>⋮</Text>
+                  </TouchableOpacity>
+                </View>
+              }
+              anchorPosition="bottom"
+              contentStyle={{
+                backgroundColor: '#fff',
+                borderRadius: 8,
+                elevation: 6,
+                paddingVertical: 4,
+                width: 160,
+              }}
+            >
+              <Menu.Item
+                onPress={() => handleBookmark(announcement)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  height: 44,
+                  paddingVertical: 4,
+                  paddingHorizontal: 12,
+                }}
+                title={
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    {(announcement as any)?.bookmarked_by_user_ids?.includes(
+                      userData?.id,
+                    ) ? (
+                      <Bookmark size={18} color="#007AFF" />
+                    ) : (
+                      <BookmarkCheck size={18} color="#333" />
+                    )}
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        color: (
+                          announcement as any
+                        )?.bookmarked_by_user_ids?.includes(userData?.id)
+                          ? '#007AFF'
+                          : '#333',
+                      }}
+                    >
+                      {(announcement as any)?.bookmarked_by_user_ids?.includes(
+                        userData?.id,
+                      )
+                        ? 'Bookmarked'
+                        : 'Bookmark'}
+                    </Text>
+                  </View>
+                }
+              />
+            </Menu>
+          </View>
         </View>
 
         {/* Title + Content or Poll */}
@@ -956,20 +1558,23 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
             </View>
             <View>
               {totalReactions > 0 && (
-                <Text style={styles.footerText}>
-                  {announcement?.AnnouncementLikes?.find(
-                    item => item.liked_by === userData?.id,
-                  )
-                    ? 'You'
-                    : announcement?.AnnouncementLikes?.[0]?.User?.first_name ||
-                      'Someone'}
-
-                  {totalReactions === 1
-                    ? ''
-                    : ` and ${totalReactions - 1} ${
-                        totalReactions - 1 === 1 ? 'other' : 'others'
-                      }`}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => handleReactionModal(announcement)}
+                >
+                  <Text style={styles.footerText}>
+                    {announcement?.AnnouncementLikes?.find(
+                      item => item.liked_by === userData?.id,
+                    )
+                      ? 'You'
+                      : announcement?.AnnouncementLikes?.[0]?.User
+                          ?.first_name || 'Someone'}
+                    {totalReactions === 1
+                      ? ''
+                      : ` and ${totalReactions - 1} ${
+                          totalReactions - 1 === 1 ? 'other' : 'others'
+                        }`}
+                  </Text>
+                </TouchableOpacity>
               )}
             </View>
           </View>

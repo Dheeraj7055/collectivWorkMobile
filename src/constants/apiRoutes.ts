@@ -12,6 +12,11 @@ export const API_ROUTES = {
   POLL_RESPONSE: '/api/announcement/answer/response',
   BOOKMARK_LIST: '/api/announcement/bookmark',
   SEND_COMMENT: '/api/announcement/comment',
+  UPDATE_POST_COMMENT: '/api/announcement/comment/update',
+  DELETE_POST_COMMENT: '/api/announcement/comment/delete',
+  COMMENTS_LIKE: '/api/announcement/comment/like',
+  REMOVE_BOOKMARK_POST: '/api/announcement/bookmark/remove',
+  BOOKMARK_POST: '/api/announcement/bookmark',
 
   //other
   LEAVE: '/api/leave/list',

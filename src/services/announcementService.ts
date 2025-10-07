@@ -16,5 +16,15 @@ export const announcementService = {
   getBookmarks: async () => {
     return await apiClient.get(API_ROUTES.BOOKMARK_LIST);
   },
+
+   // Update comment
+  updateComment: async (payload: { payload: string }) => {
+    return await apiClient.post(API_ROUTES.UPDATE_POST_COMMENT, payload);
+  },
+
+  // ✅ Delete comment
+  deleteComment: async (payload: { payload: string }) => {
+    return await apiClient.post(API_ROUTES.DELETE_POST_COMMENT, payload);
+  },
 };
 

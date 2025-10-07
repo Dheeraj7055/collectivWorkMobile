@@ -170,211 +170,269 @@ export const styles = StyleSheet.create({
     marginTop: 6,
   },
   modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: '600',
+    color: '#000',
   },
-
-  // Comment List
-  // commentItem: {
-  //   flexDirection: "row",
-  //   marginBottom: 12,
-  //   paddingVertical: 4,
-  // },
   avatarPlaceholder: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   commentContent: {
     marginLeft: 10,
     flex: 1,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     padding: 8,
   },
-  // commentName: {
-  //   fontWeight: "600",
-  //   fontSize: 14,
-  //   color: "#222",
-  //   marginBottom: 2,
-  // },
-  // commentText: {
-  //   fontSize: 13,
-  //   color: "#444",
-  // },
 
   commentBox: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
-    gap: 2
+    gap: 2,
   },
-  // commentListBlock: {
-  //   marginBottom: 12,
-  //   maxHeight: 150, 
-  // },
   commentListBlock: {
-  maxHeight: 200,
-},
+    maxHeight: 200,
+  },
 
-commentItem: {
-  flexDirection: 'row',
-  marginBottom: 16,
-},
+  commentItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
 
-// avatar: {
-//   width: 40,
-//   height: 40,
-//   borderRadius: 20,
-// },
+  commentBody: {
+    flex: 1,
+    marginLeft: 10,
+  },
 
-// avatarPlaceholder: {
-//   width: 40,
-//   height: 40,
-//   borderRadius: 20,
-//   justifyContent: 'center',
-//   alignItems: 'center',
-// },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 
-// avatarText: {
-//   color: '#fff',
-//   fontWeight: 'bold',
-// },
+  commentName: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#000',
+  },
 
-commentBody: {
-  flex: 1,
-  marginLeft: 10,
-},
+  commentRole: {
+    fontSize: 12,
+    color: '#666',
+  },
 
-commentHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
+  commentTime: {
+    fontSize: 12,
+    color: '#666',
+  },
 
-commentName: {
-  fontWeight: 'bold',
-  fontSize: 14,
-  color: '#000',
-},
+  commentText: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#333',
+    lineHeight: 18,
+  },
 
-commentRole: {
-  fontSize: 12,
-  color: '#666',
-},
+  commentFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 12,
+  },
 
-commentTime: {
-  fontSize: 12,
-  color: '#666',
-},
+  commentAction: {
+    fontSize: 12,
+    // color: '#666',
+    marginRight: 8,
+  },
 
-commentText: {
-  marginTop: 4,
-  fontSize: 13,
-  color: '#333',
-  lineHeight: 18,
-},
+  reactionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
 
-commentFooter: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: 6,
-},
+  emoji: {
+    fontSize: 14,
+    marginRight: 2,
+  },
 
-commentAction: {
-  fontSize: 12,
-  color: '#666',
-  marginRight: 8,
-},
+  likeCount: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 2,
+    marginRight: 8,
+  },
 
-reactionsRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginRight: 8,
-},
-
-emoji: {
-  fontSize: 14,
-  marginRight: 2,
-},
-
-likeCount: {
-  fontSize: 12,
-  color: '#666',
-  marginLeft: 2,
-  marginRight: 8,
-},
-
-replyCount: {
-  fontSize: 12,
-  color: '#666',
-},
-
+  replyCount: {
+    fontSize: 12,
+    color: '#666',
+  },
 
   // Input Row
   inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 25,
     paddingHorizontal: 10,
     height: 45,
-    flex: 1
+    flex: 1,
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#000",
+    color: '#000',
     marginHorizontal: 6,
   },
   sendButton: {
-    marginLeft: 6,
-    backgroundColor: "#2196F3",
+    // marginLeft: 6,
+    backgroundColor: '#2196F3',
     borderRadius: 20,
     padding: 8,
   },
   disabledSendButton: {
-    backgroundColor: "#aaa",
+    backgroundColor: '#aaa',
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 8,
   },
 
   // Footer Buttons
   confirmButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: '#2196F3',
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 8,
   },
   confirmText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   cancelButton: {
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
   },
   cancelText: {
-    color: "#000",
+    color: '#000',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
+  editInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 14,
+    color: '#333',
+    marginTop: 4,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 6,
+    gap: 10,
+  },
+  saveBtn: {
+    backgroundColor: '#0E79B6',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  cancelBtn: {
+    backgroundColor: '#999',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  reactionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    // marginLeft: 8,
+  },
+
+  reactionCountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f1f1',
+    borderRadius: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+
+  reactionCountText: {
+    fontSize: 12,
+    marginLeft: 4,
+    color: '#333',
+    fontWeight: '500',
+  },
+  menuOption: {
+    fontSize: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    color: '#333',
+  },
+  tabButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginRight: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 20,
+  backgroundColor: '#f2f2f2',
+},
+tabButtonActive: {
+  backgroundColor: '#e0ebff',
+},
+tabText: {
+  // marginLeft: 5,
+  fontSize: 13,
+  color: '#555',
+},
+imageTabText: {
+  marginLeft: 5,
+  fontSize: 13,
+  color: '#555',
+},
+tabTextActive: {
+  color: '#0066cc',
+  fontWeight: '600',
+},
+profileImage: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+},
+userName: {
+  fontWeight: '600',
+  fontSize: 14,
+  color: '#222',
+},
+userDesignation: {
+  fontSize: 12,
+  color: '#777',
+},
+
 });

@@ -5,10 +5,17 @@ export interface MediaItem {
   url: string;
 }
 
+export interface CommentLike {
+  liked_by: number | string;
+  reactions: string;
+}
+
 export interface CommentItem {
   id: number | string;
   comment: string;
   created_at?: string;
+  CommentLikes?: CommentLike[];
+  reactions_count?: Record<string, number>;
   User: {
     id: number;
     first_name?: string;
@@ -98,4 +105,5 @@ export interface Announcement {
   repost_post_created_at?: string;
   is_edited?: boolean;
   Comments?: CommentItem[];
+  bookmarked_by_user_ids?: number[];
 }

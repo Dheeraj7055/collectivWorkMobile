@@ -11,10 +11,8 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { PostCard } from '@/components/PostCard';
 import { styles } from '@/styles/postScreenStyles';
-import { Header } from '@/components/Header';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchAnnouncements, fetchBookmarks } from '@/redux/slices/announcementSlice';
@@ -982,7 +980,7 @@ const handleCreate = async () => {
         data={records}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => <PostCard announcement={item} />}
-        onRefreshData={reloadPosts} // ✅ will refresh on pull
+        onRefreshData={reloadPosts} // will refresh on pull
         ListEmptyComponent={
           !isLoading ? (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>
