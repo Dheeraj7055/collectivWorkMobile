@@ -26,5 +26,11 @@ export const announcementService = {
   deleteComment: async (payload: { payload: string }) => {
     return await apiClient.post(API_ROUTES.DELETE_POST_COMMENT, payload);
   },
+
+  // pinned list
+  getPinned: () => apiClient.get(API_ROUTES.PIN_USER_LIST), 
+
+  // toggle pin
+  togglePin: (endpoint: string, params: any) => apiClient.post(endpoint, params),
 };
 

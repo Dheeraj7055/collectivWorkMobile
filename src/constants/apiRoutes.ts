@@ -17,6 +17,13 @@ export const API_ROUTES = {
   COMMENTS_LIKE: '/api/announcement/comment/like',
   REMOVE_BOOKMARK_POST: '/api/announcement/bookmark/remove',
   BOOKMARK_POST: '/api/announcement/bookmark',
+  REPOST_ANNOUNCEMENT: '/api/announcement/repost',
+  ANNOUNCEMENT_DELETE: '/api/announcement/delete',
+  PIN_USER: '/api/announcement/pin/user',
+  REMOVE_PIN_USER: '/api/announcement/remove/pin/user',
+  PIN_USER_LIST: '/api/announcement/pin/user',
+  REPORT_ANNOUNCEMENT: '/api/announcement/report',
+
 
   //other
   LEAVE: '/api/leave/list',

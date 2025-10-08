@@ -81,6 +81,7 @@ export interface Announcement {
   createdByUser?: CreatedByUser;
   created_at: string;
   subject: string;
+  repost_thought: string;
   description: string;
   type?: string;
   document_urls?: MediaItem[];
@@ -94,7 +95,7 @@ export interface Announcement {
   question?: string;
   Badge?: Badge;
   praisedUser?: PraisedUser;
-  reposted_by?: number | null;
+  reposted_by?: number | string | null;
   repostedByUser?: {
     id: number;
     first_name?: string;

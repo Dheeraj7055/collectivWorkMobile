@@ -8,8 +8,10 @@ import Toast from 'react-native-toast-message';
 export interface Announcement {
   id: string | number;
   subject: string;
+  repost_thought: string;
   description: string;
   created_at: string;
+  reposted_by?: number | string | null;
   createdByUser?: {
     id: string | number;
     first_name: string;
@@ -28,14 +30,28 @@ export interface Announcement {
   type?: string;
 }
 
+export interface PinnedUser {
+  id: number;
+  pin_user_id: number;
+  pinned_by: number;
+  pinUser: {
+    first_name: string;
+    last_name: string;
+    profile_color?: string;
+    image_url?: string | null;
+    user_id: number;
+  };
+}
 interface AnnouncementState {
   records: Announcement[];
+  pinnedUsers: PinnedUser[];
   isLoading: boolean;
   error: string | null;
 }
 
 const initialState: AnnouncementState = {
   records: [],
+  pinnedUsers: [],
   isLoading: false,
   error: null,
 };
@@ -70,6 +86,53 @@ export const fetchBookmarks = createAsyncThunk<
     return rejectWithValue(error.message || 'Failed to load bookmarks');
   }
 });
+
+//  Get all pinned users
+export const fetchPinnedUsers = createAsyncThunk<
+  PinnedUser[],
+  void,
+  { rejectValue: string }
+>('announcements/fetchPinnedUsers', async (_, { rejectWithValue }) => {
+  try {
+    const res = await announcementService.getPinned();
+    return res.data;
+  } catch (err: any) {
+    return rejectWithValue(err.message || 'Failed to load pinned users');
+  }
+});
+
+export const togglePinUser = createAsyncThunk<
+  void,
+  { userId: number; isPinned: boolean },
+  { rejectValue: string }
+>(
+  'announcements/togglePinUser',
+  async ({ userId, isPinned }, { rejectWithValue, dispatch }) => {
+    try {
+      const payload = encodeData({ user_id: userId });
+      const endpoint = isPinned
+        ? '/api/announcement/remove/pin/user'
+        : '/api/announcement/pin/user';
+
+      const res = await announcementService.togglePin(endpoint, { payload });
+
+      if (res?.success) {
+        Toast.show({
+          type: 'success',
+          text1: isPinned
+            ? 'User unpinned successfully'
+            : 'User pinned successfully',
+        });
+        // ✅ Refresh pinned announcement list
+        dispatch(fetchPinnedUsers());
+      } else {
+        return rejectWithValue(res?.message || 'Failed to update pinned user');
+      }
+    } catch (err: any) {
+      return rejectWithValue(err.message || 'Failed to update pinned user');
+    }
+  },
+);
 
 // 🔹 Edit comments
 export const updatePostComment = createAsyncThunk<
@@ -121,9 +184,7 @@ export const deletePostComment = createAsyncThunk<
         });
         return res.data;
       } else {
-        return rejectWithValue(
-          res?.message || 'Failed to delete comment',
-        );
+        return rejectWithValue(res?.message || 'Failed to delete comment');
       }
     } catch (err: any) {
       return rejectWithValue(err.message || 'Failed to delete comment');
@@ -174,6 +235,20 @@ const announcementSlice = createSlice({
       .addCase(fetchBookmarks.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Failed to load bookmarks';
+      });
+
+    // Pinned Announcements
+    builder
+      .addCase(fetchPinnedUsers.pending, state => {
+        state.isLoading = true;
+      })
+      .addCase(fetchPinnedUsers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.pinnedUsers = action.payload || [];
+      })
+      .addCase(fetchPinnedUsers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || 'Failed to load pinned users';
       });
   },
 });

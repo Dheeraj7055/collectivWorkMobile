@@ -12,6 +12,15 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  iconGeneralCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E6F0FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -50,6 +59,12 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1e88e5',
     marginBottom: 4,
+  },
+  repostedTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e88e5',
+    marginBottom: 8,
   },
   content: {
     fontSize: 13,

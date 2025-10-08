@@ -33,9 +33,12 @@ import {
   Bookmark,
   BookmarkCheck,
   Gift,
+  MessageSquareText,
   Pencil,
+  Repeat2,
   Star,
   ThumbsUp,
+  Trash2,
 } from 'lucide-react-native';
 import FastImage from 'react-native-fast-image';
 import PraiseTrophy from '../../assets/images/praise-trophy.svg';
@@ -44,6 +47,11 @@ import AppModal from '@/common/AppModal';
 import { getFullName, getInitials } from '@/common/CommonFunctions';
 import Toast from 'react-native-toast-message';
 import { Menu } from 'react-native-paper';
+import { useRepostHandler } from '@/hooks/useRepostHandler';
+import { PostRepostModal } from './Announcement/PostRepostModal';
+import { PostPinMenuItem } from './Announcement/PostPinMenuItem';
+import { PostReportMenuItem } from './Announcement/PostReportMenuItem';
+import { PostReportModal } from './Announcement/PostReportModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -71,6 +79,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   }`.trim();
   const date = announcement.created_at;
   const title = announcement.subject;
+  const repost_thought = announcement?.repost_thought;
   const content = announcement.description;
   const images = announcement.document_urls || [];
   const likes = announcement.total_likes;
@@ -96,6 +105,24 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
     'all' | string
   >('all');
   const [visibleMenuId, setVisibleMenuId] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+
+const handleOpenReportModal = (announcement: any) => {
+  setSelectedAnnouncement(announcement);
+  setShowReportModal(true);
+};
+  const { pinnedUsers } = useSelector(
+    (state: RootState) => state.announcements,
+  );
+  const {
+    showRepostModal,
+    currentAnnouncement,
+    openRepostModal,
+    closeRepostModal,
+    handleRepost,
+  } = useRepostHandler();
 
   // Send Comment
   const handleSendComment = async () => {
@@ -317,7 +344,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
               updatedLikes.push({ liked_by: userData?.id, reactions: 'Like' });
             }
 
-            // ✅ Preserve previous counts and update only your reaction
+            // Preserve previous counts and update only your reaction
             const updatedReactionsCount = { ...(c.reactions_count || {}) };
 
             // If removing like
@@ -704,6 +731,46 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
     }
   };
 
+  // Delete Post / Repost API
+  const handleDelete = async () => {
+    try {
+      const payload = { announcement_id: announcement?.id };
+      const encoded = encodeData(payload);
+      const res = await apiClient.post(API_ROUTES.ANNOUNCEMENT_DELETE, {
+        payload: encoded,
+      });
+
+      if (res?.success) {
+        Toast.show({
+          type: 'success',
+          text1:
+            announcement?.reposted_by === userData?.id
+              ? 'Repost deleted successfully'
+              : 'Post deleted successfully',
+        });
+
+        dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: res?.message || 'Failed to delete post',
+        });
+      }
+    } catch {
+      Toast.show({
+        type: 'error',
+        text1: 'Something went wrong while deleting',
+      });
+    } finally {
+      setShowDeleteModal(false);
+      closeMenu();
+    }
+  };
+
+  const canDelete = announcement?.reposted_by
+    ? announcement?.reposted_by === userData?.id
+    : announcement?.createdByUser?.id === userData?.id;
+
   useEffect(() => {
     dispatch(fetchUserData());
   }, [dispatch]);
@@ -741,7 +808,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
           keyExtractor={(item, index) => `${item.id}-${index}`}
           renderItem={({ item }) => {
             const isEditing = editingCommentId === item.id;
-            const isUserComment = item?.User?.id === userData?.id; // only show edit for own comments
+            const isUserComment = item?.User?.id === userData?.id;
             return (
               <View style={styles.commentItem}>
                 {/* Avatar */}
@@ -1097,8 +1164,87 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
         </View>
       </AppModal>
 
+      <AppModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      >
+        <View>
+          <View style={styles.iconGeneralCircle}>
+            <Trash2 size="20" color="#0E79B6" />
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: '600', marginTop: 10 }}>
+            {announcement?.reposted_by === userData?.id
+              ? 'Delete Repost'
+              : 'Delete Post'}
+          </Text>
+          <Text style={{ fontSize: 14, color: '#666' }}>
+            {announcement?.reposted_by === userData?.id
+              ? 'Are you sure you want to delete this repost?'
+              : 'Are you sure you want to delete this post?'}
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={{
+              backgroundColor: '#E53935',
+              borderRadius: 6,
+              paddingVertical: 10,
+              paddingHorizontal: 24,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginTop: 16,
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      </AppModal>
+
       <View key={id} style={styles.card}>
         {/* Header */}
+        {/* Show Reposted Header (if reposted) */}
+        {announcement?.reposted_by && (
+          <>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginBottom: 6,
+              }}
+            >
+              {/* Reposted user */}
+              <TouchableOpacity>
+                <Text style={[styles.name, { fontSize: 13 }]}>
+                  {announcement?.repostedByUser?.id === userData?.id
+                    ? 'You'
+                    : `${announcement?.repostedByUser?.first_name || ''} ${
+                        announcement?.repostedByUser?.last_name || ''
+                      }`}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={{ marginLeft: 4, fontSize: 12, color: '#666' }}>
+                reposted this
+              </Text>
+            </View>
+
+            {/* Line separator */}
+            <View
+              style={{
+                height: 1,
+                backgroundColor: '#E0E0E0',
+                marginBottom: 8,
+                marginTop: 5,
+              }}
+            />
+
+            {repost_thought ? (
+              <Text style={styles.repostedTitle}>{repost_thought}</Text>
+            ) : (
+              ''
+            )}
+          </>
+        )}
 
         <View style={styles.header}>
           {/* Profile Avatar */}
@@ -1121,29 +1267,16 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                 flexWrap: 'wrap',
               }}
             >
-              {/* Normal / Reposted user */}
+              {/* Case 1: Normal post */}
               <TouchableOpacity>
                 <Text style={styles.name}>
-                  {announcement?.reposted_by
-                    ? announcement?.repostedByUser?.id === userData?.id
-                      ? 'You'
-                      : `${announcement?.repostedByUser?.first_name || ''} ${
-                          announcement?.repostedByUser?.last_name || ''
-                        }`
-                    : `${announcement?.createdByUser?.first_name || ''} ${
-                        announcement?.createdByUser?.last_name || ''
-                      }`}
+                  {`${announcement?.createdByUser?.first_name || ''} ${
+                    announcement?.createdByUser?.last_name || ''
+                  }`}
                 </Text>
               </TouchableOpacity>
 
-              {/* Reposted tag */}
-              {/* {announcement?.reposted_by && (
-              <Text style={{ marginLeft: 6, fontSize: 12, color: '#666' }}>
-                reposted this
-              </Text>
-            )} */}
-
-              {/* Praised User */}
+              {/* Case 2: Praised user */}
               {announcement?.praisedUser && (
                 <View
                   style={{
@@ -1168,7 +1301,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
               )}
             </View>
 
-            {/* Date + Edited flag */}
+            {/* Date + Edited Flag */}
             <View
               style={{
                 flexDirection: 'row',
@@ -1186,6 +1319,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                       'DD MMM YYYY | hh:mm A',
                     )}
               </Text>
+
               {announcement?.is_edited && (
                 <Text style={[styles.date, { marginLeft: 4 }]}> (Edited)</Text>
               )}
@@ -1203,7 +1337,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                     onPress={() => openMenu(Number(announcement.id))}
                     style={{ padding: 4 }}
                   >
-                    <Text style={styles.menu}>⋮</Text>
+                    <Text style={{ fontSize: 20 }}>⋮</Text>
                   </TouchableOpacity>
                 </View>
               }
@@ -1213,11 +1347,12 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                 borderRadius: 8,
                 elevation: 6,
                 paddingVertical: 4,
-                width: 160,
+                width: 180,
               }}
             >
+              {/* 🔹 Bookmark Option */}
               <Menu.Item
-                onPress={() => handleBookmark(announcement)}
+                onPress={handleBookmark}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
@@ -1233,7 +1368,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                       gap: 8,
                     }}
                   >
-                    {(announcement as any)?.bookmarked_by_user_ids?.includes(
+                    {announcement?.bookmarked_by_user_ids?.includes(
                       userData?.id,
                     ) ? (
                       <Bookmark size={18} color="#007AFF" />
@@ -1243,14 +1378,14 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                     <Text
                       style={{
                         fontSize: 15,
-                        color: (
-                          announcement as any
-                        )?.bookmarked_by_user_ids?.includes(userData?.id)
+                        color: announcement?.bookmarked_by_user_ids?.includes(
+                          userData?.id,
+                        )
                           ? '#007AFF'
                           : '#333',
                       }}
                     >
-                      {(announcement as any)?.bookmarked_by_user_ids?.includes(
+                      {announcement?.bookmarked_by_user_ids?.includes(
                         userData?.id,
                       )
                         ? 'Bookmarked'
@@ -1258,6 +1393,50 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                     </Text>
                   </View>
                 }
+              />
+
+              {/* 🔹 Delete Option (only for own post / repost) */}
+              {canDelete && (
+                <Menu.Item
+                  onPress={() => setShowDeleteModal(true)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    height: 44,
+                    paddingVertical: 4,
+                    paddingHorizontal: 12,
+                  }}
+                  title={
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Trash2 size={18} color="#E53935" />
+                      <Text style={{ fontSize: 15, color: '#E53935' }}>
+                        {announcement?.reposted_by === userData?.id
+                          ? 'Delete Repost'
+                          : 'Delete Post'}
+                      </Text>
+                    </View>
+                  }
+                />
+              )}
+
+              <PostPinMenuItem
+                announcement={announcement}
+                userData={userData}
+                pinnedUserList={pinnedUsers}
+                closeMenu={closeMenu}
+              />
+
+              <PostReportMenuItem
+                announcement={announcement}
+                userData={userData}
+                closeMenu={closeMenu}
+                onOpenReport={handleOpenReportModal} // 👈 pass callback
               />
             </Menu>
           </View>
@@ -1619,7 +1798,13 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                 ]}
               >
                 {selectedReaction || (
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      gap: 6,
+                      alignItems: 'center',
+                    }}
+                  >
                     <ThumbsUp size="18" color="black" />
                     <Text>Like</Text>
                   </View>
@@ -1646,18 +1831,45 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
             onPress={() => setCommentModalVisible(true)}
             style={styles.actionButton}
           >
-            <Text style={styles.actionText}>Comment</Text>
+            <View
+              style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}
+            >
+              <MessageSquareText size="18" color="black" />
+              <Text>Comment</Text>
+            </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionText}>Repost</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => openRepostModal(announcement)}
+          >
+            <View
+              style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}
+            >
+              <Repeat2 size="18" color="black" />
+              <Text>Repost</Text>
+            </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          {/* <TouchableOpacity style={styles.actionButton}>
             <Text style={styles.actionText}>Send</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
+
+      <PostRepostModal
+        visible={showRepostModal}
+        onClose={closeRepostModal}
+        userData={userData}
+        announcement={currentAnnouncement}
+        onSubmit={handleRepost}
+      />
+
+      <PostReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        announcement={selectedAnnouncement}
+      />
     </>
   );
 };

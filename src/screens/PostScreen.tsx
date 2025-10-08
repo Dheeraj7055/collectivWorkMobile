@@ -15,7 +15,7 @@ import { PostCard } from '@/components/PostCard';
 import { styles } from '@/styles/postScreenStyles';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
-import { fetchAnnouncements, fetchBookmarks } from '@/redux/slices/announcementSlice';
+import { fetchAnnouncements, fetchBookmarks, fetchPinnedUsers } from '@/redux/slices/announcementSlice';
 import AppModal from '@/common/AppModal';
 import { Dropdown } from 'react-native-element-dropdown';
 import {
@@ -43,6 +43,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '@/navigation/AppNavigator';
 import { RefreshableList } from '@/common/RefreshableList';
+import { Announcement } from '@/types/announcement';
 
 
 // --- TYPES ---
@@ -62,7 +63,7 @@ export const PostScreen = () => {
   const navigation = useNavigation<PostScreenNavigationProp>();
   const dispatch = useDispatch<AppDispatch>();
   const userData = useSelector((state: RootState) => state.user.profile);
-  const { records, isLoading, error } = useSelector(
+  const { records, pinnedUsers, isLoading, error } = useSelector(
     (state: RootState) => state.announcements,
   );
   const { names } = useSelector((state: RootState) => state.user);
@@ -104,7 +105,7 @@ export const PostScreen = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  type PostFilter = "all" | "posts" | "praise" | "liked" | "repost" | "bookmark";
+  type PostFilter = "all" | "posts" | "praise" | "liked" | "repost" | "bookmark" | "pinned";
 
   const [currentPostList, setCurrentPostList] = useState<PostFilter>("all");
 
@@ -140,6 +141,7 @@ export const PostScreen = () => {
   ];
 
   useEffect(() => {
+    dispatch(fetchPinnedUsers());
     dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
   }, [dispatch]);
 
@@ -216,6 +218,10 @@ export const PostScreen = () => {
 
       case 'bookmark':
         navigation.navigate('Bookmarks');
+        break;
+
+      case 'pinned':
+        dispatch(fetchPinnedUsers())
         break;
 
       default:
@@ -516,6 +522,7 @@ const handleCreate = async () => {
                 'liked',
                 'repost',
                 'bookmark',
+                'pinned',
               ] as PostFilter[]
             ).map(option => (
               <TouchableOpacity
@@ -544,6 +551,8 @@ const handleCreate = async () => {
                     ? 'Liked Posts'
                     : option === 'bookmark'
                     ? 'Bookmarked Posts'
+                    : option === 'pinned'
+                    ? 'Pinned Posts'
                     : 'Reposted Posts'}
                 </Text>
               </TouchableOpacity>
@@ -961,7 +970,6 @@ const handleCreate = async () => {
         </TouchableOpacity>
       </AppModal>
 
-
       {/* Loading + Error */}
       {isLoading && <ActivityIndicator size="large" color="#2196F3" />}
       {error && (
@@ -977,14 +985,36 @@ const handleCreate = async () => {
         renderItem={({ item }) => <PostCard announcement={item} />}
       /> */}
       <RefreshableList
-        data={records}
+        data={
+          currentPostList === 'pinned'
+            ? records.filter(a => {
+                const pinnedIds = pinnedUsers.map(u => Number(u.pin_user_id));
+
+                const createdById = a?.createdByUser?.id
+                  ? Number(a.createdByUser.id)
+                  : undefined;
+                const repostedById = a?.reposted_by
+                  ? Number(a.reposted_by)
+                  : undefined;
+
+                return (
+                  (createdById !== undefined &&
+                    pinnedIds.includes(createdById)) ||
+                  (repostedById !== undefined &&
+                    pinnedIds.includes(repostedById))
+                );
+              })
+            : records
+        }
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => <PostCard announcement={item} />}
-        onRefreshData={reloadPosts} // will refresh on pull
+        onRefreshData={reloadPosts}
         ListEmptyComponent={
           !isLoading ? (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>
-              No posts available
+              {currentPostList === 'pinned'
+                ? 'No posts from pinned users'
+                : 'No posts available'}
             </Text>
           ) : null
         }
