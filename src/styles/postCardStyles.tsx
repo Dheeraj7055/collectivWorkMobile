@@ -315,15 +315,16 @@ export const styles = StyleSheet.create({
   sendButton: {
     // marginLeft: 6,
     backgroundColor: '#2196F3',
-    borderRadius: 20,
-    padding: 8,
+    borderRadius: 5,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
   disabledSendButton: {
     backgroundColor: '#aaa',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 8,
+    // marginBottom: 8,
   },
 
   // Footer Buttons

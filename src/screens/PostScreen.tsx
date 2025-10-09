@@ -105,7 +105,7 @@ export const PostScreen = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  type PostFilter = "all" | "posts" | "praise" | "liked" | "repost" | "bookmark" | "pinned";
+  type PostFilter = "all" | "posts" | "praise" | "liked" | "repost" | "bookmark" | "pinned" | "report";
 
   const [currentPostList, setCurrentPostList] = useState<PostFilter>("all");
 
@@ -211,6 +211,15 @@ export const PostScreen = () => {
         dispatch(
           fetchAnnouncements({
             postName: 'repost',
+            searchParam: searchValue,
+          }),
+        );
+        break;
+
+      case 'report':
+        dispatch(
+          fetchAnnouncements({
+            postName: 'report',
             searchParam: searchValue,
           }),
         );
@@ -523,6 +532,7 @@ const handleCreate = async () => {
                 'repost',
                 'bookmark',
                 'pinned',
+                'report'
               ] as PostFilter[]
             ).map(option => (
               <TouchableOpacity
@@ -553,6 +563,8 @@ const handleCreate = async () => {
                     ? 'Bookmarked Posts'
                     : option === 'pinned'
                     ? 'Pinned Posts'
+                    : option === 'report'
+                    ? 'Reported Posts'
                     : 'Reposted Posts'}
                 </Text>
               </TouchableOpacity>

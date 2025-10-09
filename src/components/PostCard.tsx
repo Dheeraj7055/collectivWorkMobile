@@ -52,6 +52,7 @@ import { PostRepostModal } from './Announcement/PostRepostModal';
 import { PostPinMenuItem } from './Announcement/PostPinMenuItem';
 import { PostReportMenuItem } from './Announcement/PostReportMenuItem';
 import { PostReportModal } from './Announcement/PostReportModal';
+import EmojiPicker from 'rn-emoji-keyboard';
 
 const { width, height } = Dimensions.get('window');
 
@@ -89,6 +90,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
 
   const [commentModalVisible, setCommentModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [postComments, setPostComments] = useState(
     announcement?.Comments || [],
   );
@@ -108,6 +110,11 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+
+  const handleEmojiSelect = (emojiObject: any) => {
+    setNewComment(prev => prev + emojiObject.emoji);
+  };
 
 const handleOpenReportModal = (announcement: any) => {
   setSelectedAnnouncement(announcement);
@@ -1020,7 +1027,7 @@ const handleOpenReportModal = (announcement: any) => {
               onChangeText={setNewComment}
             />
 
-            <TouchableOpacity onPress={() => console.log('Open emoji picker')}>
+            <TouchableOpacity onPress={() => setIsEmojiPickerOpen(true)}>
               <Text style={{ fontSize: 20, marginRight: 6 }}>😊</Text>
             </TouchableOpacity>
           </View>
@@ -1436,7 +1443,7 @@ const handleOpenReportModal = (announcement: any) => {
                 announcement={announcement}
                 userData={userData}
                 closeMenu={closeMenu}
-                onOpenReport={handleOpenReportModal} // 👈 pass callback
+                onOpenReport={handleOpenReportModal} // pass callback
               />
             </Menu>
           </View>
@@ -1870,6 +1877,17 @@ const handleOpenReportModal = (announcement: any) => {
         onClose={() => setShowReportModal(false)}
         announcement={selectedAnnouncement}
       />
+
+      {/* Emoji picker */}
+      {isEmojiPickerOpen && (
+        <View style={{ height: 280 }}>
+          <EmojiPicker
+            onEmojiSelected={handleEmojiSelect}
+            open={isEmojiPickerOpen}
+            onClose={() => setIsEmojiPickerOpen(false)}
+          />
+        </View>
+      )}
     </>
   );
 };
