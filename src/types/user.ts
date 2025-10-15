@@ -18,6 +18,9 @@ export interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   error: string | null;
+  mfaEnabled: boolean;
+  mfaPending?: boolean;
+  mfaEmail?: string | null;
 }
 
 export interface LoginRequest {
@@ -26,7 +29,9 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
-  refreshToken: string | null;
+  token?: string;
+  refreshToken?: string | null;
   user?: User;
+  mfa_enabled: boolean;
+  email?: string;
 }

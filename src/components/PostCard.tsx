@@ -1888,6 +1888,15 @@ const handleOpenReportModal = (announcement: any) => {
           />
         </View>
       )}
+      {/* {isEmojiPickerOpen && (
+        <EmojiPicker
+          onEmojiSelected={handleEmojiSelect}
+          open={isEmojiPickerOpen}
+          onClose={() => setIsEmojiPickerOpen(false)}
+          expandable
+          enableSearchBar={false}
+        />
+      )} */}
     </>
   );
 };

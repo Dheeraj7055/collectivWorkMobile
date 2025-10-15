@@ -1,24 +1,46 @@
-// src/navigation/AuthNavigator.tsx
+// // src/navigation/AuthNavigator.tsx
+// import React from 'react';
+// import { createStackNavigator } from '@react-navigation/stack';
+// import { LoginScreen } from '../screens/LoginScreen';
+
+// export type AuthStackParamList = {
+//   Login: undefined;
+//   Register?: undefined;
+//   ForgotPassword?: undefined;
+// };
+
+// const Stack = createStackNavigator<AuthStackParamList>();
+
+// export const AuthNavigator: React.FC = () => {
+//   return (
+//     <Stack.Navigator
+//       screenOptions={{
+//         headerShown: false,
+//       }}
+//     >
+//       <Stack.Screen name="Login" component={LoginScreen} />
+//     </Stack.Navigator>
+//   );
+// };
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { LoginScreen } from '../screens/LoginScreen';
+import { OtpVerificationScreen } from '../screens/OtpVerificationScreen';
 
 export type AuthStackParamList = {
   Login: undefined;
+  OtpVerification: { email: string };
   Register?: undefined;
   ForgotPassword?: undefined;
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
 
-export const AuthNavigator: React.FC = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-    </Stack.Navigator>
-  );
-};
+export const AuthNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+  </Stack.Navigator>
+);
+
+

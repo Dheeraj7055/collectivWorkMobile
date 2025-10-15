@@ -1,6 +1,6 @@
 // src/screens/LoginScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, SafeAreaView, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Loader } from '../components/Loader';
@@ -9,23 +9,28 @@ import { validateEmail, validateRequired } from '../utils/validation';
 import { globalStyles } from '../styles';
 import { COLORS } from '../constants/colors';
 import { SPACING } from '../themes/spacing';
+import Toast from 'react-native-toast-message';
+import { LoginResponse } from '@/types/user';
+import { useNavigation } from '@react-navigation/native';
+import { AuthStackParamList } from '@/navigation/AuthNavigator';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type NavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  
+  const navigation = useNavigation<NavigationProp>();
+
   const { login, isLoading, error } = useAuth();
 
   const validateForm = (): boolean => {
     let isValid = true;
-
-    // Reset errors
     setEmailError('');
     setPasswordError('');
 
-    // Validate email
     if (!validateRequired(email)) {
       setEmailError('Email is required');
       isValid = false;
@@ -34,7 +39,6 @@ export const LoginScreen: React.FC = () => {
       isValid = false;
     }
 
-    // Validate password
     if (!validateRequired(password)) {
       setPasswordError('Password is required');
       isValid = false;
@@ -47,10 +51,36 @@ export const LoginScreen: React.FC = () => {
     if (!validateForm()) return;
 
     try {
-      await login({ email, password });
-      Alert.alert('Success', 'Login successful!');
+      const res: LoginResponse = await login({ email, password });
+
+      // ✅ If MFA is required
+      if (res?.mfa_enabled) {
+        Toast.show({
+          type: 'info',
+          text1: 'MFA Verification Required',
+          text2: 'We’ve sent an OTP to your registered email.',
+        });
+        // Navigate to OTP screen
+        setTimeout(() => {
+          navigation.navigate('OtpVerification', { email });
+        }, 100);
+        return;
+      }
+
+      // ✅ Normal login success
+      Toast.show({
+        type: 'success',
+        text1: 'Login Successful',
+        text2: 'Welcome back!',
+      });
+
+      // RootNavigator will detect `isAuthenticated=true` and switch to AppNavigator
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'Please try again');
+      Toast.show({
+        type: 'error',
+        text1: 'Login Failed',
+        text2: error.message || 'Please try again.',
+      });
     }
   };
 
@@ -67,7 +97,6 @@ export const LoginScreen: React.FC = () => {
             style={styles.logo}
             resizeMode="contain"
           />
-
           <Text style={globalStyles.heading1}>Welcome Back</Text>
           <Text style={globalStyles.caption}>
             Sign in to your account to continue
@@ -101,9 +130,7 @@ export const LoginScreen: React.FC = () => {
             style={styles.loginButton}
           />
 
-          {error && (
-            <Text style={styles.errorText}>{error}</Text>
-          )}
+          {error && <Text style={styles.errorText}>{error}</Text>}
         </View>
       </View>
     </SafeAreaView>
@@ -114,26 +141,21 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
   },
-
   header: {
     alignItems: 'center',
     marginBottom: SPACING.XL,
   },
-
   logo: {
-    width: 120,  // adjust as per your logo
-    height: 120, // adjust as per your logo
+    width: 120,
+    height: 120,
     marginBottom: SPACING.LG,
   },
-
   form: {
     width: '100%',
   },
-
   loginButton: {
     marginTop: SPACING.MD,
   },
-
   errorText: {
     color: COLORS.ERROR,
     fontSize: 14,

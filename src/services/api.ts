@@ -5,7 +5,7 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 import { API_BASE_URL } from '@env';
-import { store } from '@/redux/store';
+import { RootState, store } from '@/redux/store';
 import { logoutExpire } from '@/redux/slices/authSlice';
 
 const api: AxiosInstance = axios.create({
@@ -17,7 +17,9 @@ const api: AxiosInstance = axios.create({
 // Request Interceptor
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const state = store.getState();
+    // const state = store.getState();
+    // const token = state.auth.token;
+    const state = store.getState() as RootState;
     const token = state.auth.token;
     if (token) {
       config.headers.set('Authorization', `${token}`);

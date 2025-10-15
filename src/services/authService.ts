@@ -10,40 +10,78 @@ export const authService = {
     const response = await apiClient.post<any>('/api/users/login', {
       payload: encodedPayload,
     });
-    const token = response.data.token || '';
-    const refreshToken = response.data.refreshToken || '';
+
+    const { data, mfa_enabled } = response;
+
+    // ✅ MFA Required: Don't store token yet
+    if (mfa_enabled) {
+      const email = credentials.email;
+      await AsyncStorage.setItem('mfa_pending', 'true');
+      await AsyncStorage.setItem('mfa_email', email);
+
+      return { mfa_enabled: true, email }; // ✅ always include email here
+    }
+
+    // ✅ Normal login
+    const token = data?.token || '';
+    const refreshToken = data?.refreshToken || '';
 
     if (token) {
       await AsyncStorage.setItem('token', token);
-    } else {
-      await AsyncStorage.removeItem('token');
-    }
-
-    if (refreshToken) {
-      await AsyncStorage.setItem('refreshToken', refreshToken);
-    } else {
-      await AsyncStorage.removeItem('refreshToken');
+      await AsyncStorage.setItem('refreshToken', refreshToken || '');
+      await AsyncStorage.multiRemove(['mfa_pending', 'mfa_email']);
     }
 
     return {
       token,
       refreshToken,
-      user: response.user,
+      user: data?.user,
+      mfa_enabled: false,
+      email: credentials.email,
     };
   },
 
-  // Logout session expired
-  logoutLocal: async (): Promise<void> => {
-    await AsyncStorage.removeItem('token');
-    await AsyncStorage.removeItem('refreshToken');
+  // 🔐 Verify OTP
+  verifyOtp: async (params: { email: string; otp: string }): Promise<LoginResponse> => {
+    // Encode payload
+    const encodedPayload = encodeData(params);
+
+    // ✅ Correct endpoint as per your note
+    const response = await apiClient.post<any>('/api/users/verify/otp', {
+      payload: encodedPayload,
+    });
+
+    const { data } = response;
+    const token = data?.token || '';
+    const refreshToken = data?.refreshToken || '';
+    const user = data?.user || null;
+
+    // ✅ Save token when successful
+    if (token) {
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('refreshToken', refreshToken || '');
+      await AsyncStorage.multiRemove(['mfa_pending', 'mfa_email']);
+    }
+
+    return {
+      token,
+      refreshToken,
+      user,
+      mfa_enabled: false,
+      email: params.email, // ✅ include for state consistency
+    };
   },
 
-  // Logout
+  // 🔒 Logout session expired
+  logoutLocal: async (): Promise<void> => {
+    await AsyncStorage.multiRemove(['token', 'refreshToken', 'mfa_pending', 'mfa_email']);
+  },
+
+  // 🔒 Logout API call
   logout: async (): Promise<void> => {
     try {
       await apiClient.post('/api/users/logout');
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('refreshToken');
+      await AsyncStorage.multiRemove(['token', 'refreshToken', 'mfa_pending', 'mfa_email']);
     } catch (error) {
       console.error('Logout API failed:', error);
       throw error;
@@ -53,14 +91,21 @@ export const authService = {
   // 🔑 Restore session
   checkAuthStatus: async (): Promise<LoginResponse | null> => {
     const token = await AsyncStorage.getItem('token');
-    if (!token) return null;
-
     const refreshToken = (await AsyncStorage.getItem('refreshToken')) || '';
+    const mfaPending = (await AsyncStorage.getItem('mfa_pending')) === 'true';
+    const mfaEmail = await AsyncStorage.getItem('mfa_email');
+
+    if (mfaPending && mfaEmail) {
+      return { mfa_enabled: true, email: mfaEmail  };
+    }
+
+    if (!token) return null;
 
     return {
       token,
       refreshToken,
-      user: undefined, // no user API, keep it null
+      user: undefined,
+      mfa_enabled: false,
     };
   },
 };
