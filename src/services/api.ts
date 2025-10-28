@@ -90,7 +90,8 @@ api.interceptors.response.use(
           const { logoutUser } = require('@/redux/slices/authSlice'); // adjust path
 
           // Dispatch logout thunk
-          store.dispatch(logoutExpire());
+          // store.dispatch(logoutExpire());
+          await store.dispatch(logoutExpire());
 
           // Optionally show a toast
           const Toast = require('react-native-toast-message').default;

@@ -111,52 +111,65 @@ const authSlice = createSlice({
         state.error = action.payload || 'Login failed';
       })
 
-      // 🔐 Verify OTP
-      .addCase(verifyOtp.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(verifyOtp.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const res = action.payload;
-        state.token = res.token || null;
-        state.refreshToken = res.refreshToken || null;
-        state.user = res.user || null;
-        state.isAuthenticated = !!res.token; // ✅ important
-        state.mfaPending = false;
-        state.mfaEnabled = false;
-        state.mfaEmail = null;
-      })
-      .addCase(verifyOtp.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload || 'OTP verification failed';
-      })
+      builder
+        .addCase(logoutExpire.fulfilled, state => {
+          state.token = null;
+          state.refreshToken = null;
+          state.user = null;
 
-      // 🔒 Logout
-      .addCase(logoutUser.fulfilled, (state) => {
-        Object.assign(state, initialState);
-      })
+          state.isAuthenticated = false;
 
-      // 🔑 Restore session
-      .addCase(restoreSessionFromStorage.fulfilled, (state, action) => {
-        state.isLoading = false;
-        const res = action.payload;
-        if (res?.mfa_enabled) {
-          state.mfaPending = true;
-          state.mfaEnabled = true;
-        } else if (res?.token) {
-          state.token = res.token;
+          // make sure we don't get stuck on MFA screen after logout
+          state.mfaPending = false;
+          state.mfaEmail = null;
+        })
+
+        // 🔐 Verify OTP
+        .addCase(verifyOtp.pending, state => {
+          state.isLoading = true;
+          state.error = null;
+        })
+        .addCase(verifyOtp.fulfilled, (state, action) => {
+          state.isLoading = false;
+          const res = action.payload;
+          state.token = res.token || null;
           state.refreshToken = res.refreshToken || null;
           state.user = res.user || null;
-          state.isAuthenticated = true;
-        } else {
+          state.isAuthenticated = !!res.token; // ✅ important
+          state.mfaPending = false;
+          state.mfaEnabled = false;
+          state.mfaEmail = null;
+        })
+        .addCase(verifyOtp.rejected, (state, action) => {
+          state.isLoading = false;
+          state.error = action.payload || 'OTP verification failed';
+        })
+
+        // 🔒 Logout
+        .addCase(logoutUser.fulfilled, state => {
+          Object.assign(state, initialState);
+        })
+
+        // 🔑 Restore session
+        .addCase(restoreSessionFromStorage.fulfilled, (state, action) => {
+          state.isLoading = false;
+          const res = action.payload;
+          if (res?.mfa_enabled) {
+            state.mfaPending = true;
+            state.mfaEnabled = true;
+          } else if (res?.token) {
+            state.token = res.token;
+            state.refreshToken = res.refreshToken || null;
+            state.user = res.user || null;
+            state.isAuthenticated = true;
+          } else {
+            state.isAuthenticated = false;
+          }
+        })
+        .addCase(restoreSessionFromStorage.rejected, state => {
+          state.isLoading = false;
           state.isAuthenticated = false;
-        }
-      })
-      .addCase(restoreSessionFromStorage.rejected, (state) => {
-        state.isLoading = false;
-        state.isAuthenticated = false;
-      });
+        });
   },
 });
 
