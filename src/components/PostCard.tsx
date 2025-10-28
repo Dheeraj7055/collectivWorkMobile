@@ -53,6 +53,7 @@ import { PostPinMenuItem } from './Announcement/PostPinMenuItem';
 import { PostReportMenuItem } from './Announcement/PostReportMenuItem';
 import { PostReportModal } from './Announcement/PostReportModal';
 import EmojiPicker from 'rn-emoji-keyboard';
+import { EditPostModal } from './Announcement/EditPostModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -111,15 +112,30 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<any>(null);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [editSubject, setEditSubject] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editRepostThought, setEditRepostThought] = useState('');
+  const [editPollQuestion, setEditPollQuestion] = useState('');
+  const [editPollOptions, setEditPollOptions] = useState<string[]>([]);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+// validation errors
+const [editErrors, setEditErrors] = useState<{
+  subject?: string;
+  description?: string;
+  repostThought?: string;
+  pollQuestion?: string;
+  pollOption?: string;
+}>({});
 
   const handleEmojiSelect = (emojiObject: any) => {
     setNewComment(prev => prev + emojiObject.emoji);
   };
 
-const handleOpenReportModal = (announcement: any) => {
-  setSelectedAnnouncement(announcement);
-  setShowReportModal(true);
-};
+  const handleOpenReportModal = (announcement: any) => {
+    setSelectedAnnouncement(announcement);
+    setShowReportModal(true);
+  };
   const { pinnedUsers } = useSelector(
     (state: RootState) => state.announcements,
   );
@@ -228,6 +244,25 @@ const handleOpenReportModal = (announcement: any) => {
     if (announcement?.AnnouncementLikes?.length > 0) {
       setCurrentReactionAnnouncement(announcement);
       setShowReactionModal(true);
+    }
+  };
+
+  const seedEditFormFromAnnouncement = (ann: any) => {
+    // reset errors
+    setEditErrors({});
+
+    if (ann.reposted_by) {
+      // repost edit (only thought)
+      setEditRepostThought(ann.repost_thought ?? '');
+    } else if (ann.type === 'poll') {
+      setEditPollQuestion(ann.question ?? '');
+      setEditPollOptions(
+        ann.options && Array.isArray(ann.options) ? ann.options : [],
+      );
+    } else {
+      // normal post
+      setEditSubject(ann.subject ?? '');
+      setEditDescription(ann.description ?? '');
     }
   };
 
@@ -778,6 +813,135 @@ const handleOpenReportModal = (announcement: any) => {
     ? announcement?.reposted_by === userData?.id
     : announcement?.createdByUser?.id === userData?.id;
 
+  const handleEditPress = (ann: any) => {
+    // grab original values and preload into edit state
+    seedEditFormFromAnnouncement(ann);
+    setSelectedAnnouncement(ann);
+    setShowEditModal(true);
+    closeMenu();
+  };
+
+  const onChangePollOption = (idx: number, txt: string) => {
+    setEditPollOptions(prev => {
+      const clone = [...prev];
+      clone[idx] = txt;
+      return clone;
+    });
+  };
+
+  const onRemovePollOption = (idx: number) => {
+    setEditPollOptions(prev => prev.filter((_, i) => i !== idx));
+  };
+
+const onAddPollOption = () => {
+  setEditPollOptions(prev => [...prev, '']);
+};
+
+const handleConfirmUpdate = async () => {
+  const newErrors: any = {};
+
+  if (selectedAnnouncement?.reposted_by) {
+    // editing a repost: must have repost thought
+    if (!editRepostThought || !editRepostThought.trim()) {
+      newErrors.repostThought = 'Repost thought is required';
+    }
+  } else if (selectedAnnouncement?.type === 'poll') {
+    // editing a poll: question + all options required
+    if (!editPollQuestion || !editPollQuestion.trim()) {
+      newErrors.pollQuestion = 'Poll question is required';
+    }
+    const emptyIdx = editPollOptions.findIndex(opt => !opt || !opt.trim());
+    if (emptyIdx !== -1) {
+      newErrors.pollOption = 'Poll options cannot be empty.';
+    }
+  } else {
+    // normal post: subject + description
+    const trimmedSubj = editSubject ? editSubject.trim() : '';
+    const trimmedDesc = editDescription ? editDescription.trim() : '';
+
+    if (!trimmedSubj) {
+      newErrors.subject = 'Subject is required';
+    } else if (trimmedSubj.length > 200) {
+      newErrors.subject = 'Subject cannot exceed 200 characters';
+    }
+
+    if (!trimmedDesc) {
+      newErrors.description = 'Description is required';
+    }
+  }
+
+  if (Object.keys(newErrors).length > 0) {
+    setEditErrors(newErrors);
+    return;
+  }
+
+  const payload = {
+    announcement_id: selectedAnnouncement?.id,
+    notification_level: selectedAnnouncement?.notification_level,
+    schedule_announcement: selectedAnnouncement?.created_at,
+
+    subject:
+      selectedAnnouncement?.type === 'poll'
+        ? null
+        : editSubject?.trim() || null,
+
+    type: selectedAnnouncement?.type,
+
+    description:
+      selectedAnnouncement?.type === 'poll'
+        ? null
+        : editDescription?.trim() || null,
+
+    options: selectedAnnouncement?.type === 'poll' ? editPollOptions : null,
+
+    question:
+      selectedAnnouncement?.type === 'poll'
+        ? editPollQuestion?.trim() || null
+        : null,
+
+    status: 'Active',
+
+    repost_thought: selectedAnnouncement?.reposted_by
+      ? editRepostThought?.trim() || null
+      : null,
+
+    is_edited: true,
+  };
+
+  const encoded = encodeData(payload);
+
+  try {
+    const res = await apiClient.put(API_ROUTES.UPDATE_ANNOUNCEMENT, {
+      payload: encoded,
+    });
+
+    if (res?.success) {
+      Toast.show({
+        type: 'success',
+        text1: 'Post updated',
+      });
+
+      // refresh feed
+      dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
+
+      setShowEditModal(false);
+
+      setEditErrors({});
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: res?.data?.message || 'Failed to update post',
+      });
+    }
+  } catch (err: any) {
+    // request failed
+    Toast.show({
+      type: 'error',
+      text1: 'Error updating post',
+    });
+  }
+};
+
   useEffect(() => {
     dispatch(fetchUserData());
   }, [dispatch]);
@@ -1207,6 +1371,27 @@ const handleOpenReportModal = (announcement: any) => {
         </View>
       </AppModal>
 
+      <EditPostModal
+        visible={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        announcement={selectedAnnouncement}
+        editSubject={editSubject}
+        setEditSubject={setEditSubject}
+        editDescription={editDescription}
+        setEditDescription={setEditDescription}
+        editRepostThought={editRepostThought}
+        setEditRepostThought={setEditRepostThought}
+        editPollQuestion={editPollQuestion}
+        setEditPollQuestion={setEditPollQuestion}
+        editPollOptions={editPollOptions}
+        setEditPollOptions={setEditPollOptions}
+        editErrors={editErrors}
+        onRemovePollOption={onRemovePollOption}
+        onChangePollOption={onChangePollOption}
+        onAddPollOption={onAddPollOption}
+        onConfirmUpdate={handleConfirmUpdate}
+      />
+
       <View key={id} style={styles.card}>
         {/* Header */}
         {/* Show Reposted Header (if reposted) */}
@@ -1401,6 +1586,37 @@ const handleOpenReportModal = (announcement: any) => {
                   </View>
                 }
               />
+
+              {/* 🔹 NEW: Edit Post (only if current user can edit) */}
+              {canDelete && (
+                <Menu.Item
+                  onPress={() => {
+                    // open modal and seed fields
+                    handleEditPress(announcement);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    height: 44,
+                    paddingVertical: 4,
+                    paddingHorizontal: 12,
+                  }}
+                  title={
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Pencil size={18} color="#333" />
+                      <Text style={{ fontSize: 15, color: '#333' }}>
+                        Edit Post
+                      </Text>
+                    </View>
+                  }
+                />
+              )}
 
               {/* 🔹 Delete Option (only for own post / repost) */}
               {canDelete && (
