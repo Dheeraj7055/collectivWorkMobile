@@ -79,7 +79,7 @@ export const LoginScreen: React.FC = () => {
       Toast.show({
         type: 'error',
         text1: 'Login Failed',
-        text2: error.message || 'Please try again.',
+        text2: error || 'Please try again.',
       });
     }
   };

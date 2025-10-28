@@ -23,51 +23,6 @@ const AudienceDropdown: React.FC<AudienceDropdownProps> = ({
   setSectionSelection,
 }) => {
   return (
-    // <Dropdown
-    //   style={{
-    //     height: 50,
-    //     borderWidth: 1,
-    //     borderRadius: 8,
-    //     paddingHorizontal: 10,
-    //     borderColor: "#ccc",
-    //   }}
-    //   data={audienceOptions}
-    //   labelField="label"
-    //   valueField="value"
-    //   placeholder="Select Audience"
-    //   value={sectionSelection || (selectAll ? "all" : null)}
-    //   onChange={() => {}} // not used
-    //   renderItem={(item) => {
-    //     if (item.value === "all") {
-    //       return (
-    //         <View style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}>
-    //           <CheckBox value={selectAll} onValueChange={handleSelectAllChange} />
-    //           <Text style={{ marginLeft: 8 }}>{item.label}</Text>
-    //         </View>
-    //       );
-    //     }
-
-    //     return (
-    //       <View
-    //         style={{
-    //           flexDirection: 'row',
-    //           alignItems: 'center',
-    //           paddingVertical: 10,
-    //         }}
-    //       >
-    //         <CheckBox
-    //           value={sectionSelection === item.value}
-    //           onValueChange={() => {
-    //             setSectionSelection(
-    //               sectionSelection === item.value ? null : item.value,
-    //             );
-    //           }}
-    //         />
-    //         <Text style={{ marginLeft: 8 }}>{item.label}</Text>
-    //       </View>
-    //     );
-    //   }}
-    // />
     <Dropdown
       style={{
         height: 50,

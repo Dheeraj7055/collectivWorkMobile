@@ -10,6 +10,7 @@ import {
   Image,
   Platform,
   Alert,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { PostCard } from '@/components/PostCard';
 import { styles } from '@/styles/postScreenStyles';
@@ -17,7 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/redux/store';
 import { fetchAnnouncements, fetchBookmarks, fetchPinnedUsers } from '@/redux/slices/announcementSlice';
 import AppModal from '@/common/AppModal';
-import { Dropdown } from 'react-native-element-dropdown';
+import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
 import {
   Search,
   Filter,
@@ -78,10 +79,17 @@ export const PostScreen = () => {
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [audienceModalVisible, setAudienceModalVisible] = useState(false);
 
+    const permissionOptions = [
+      { label: 'Likes', value: 'likes' },
+      { label: 'Comments', value: 'comments' },
+      { label: 'Repost', value: 'repost' },
+      { label: 'Share', value: 'share' },
+    ];
+
   // --- Post state ---
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(permissionOptions.map(opt => opt.value));
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [praiseTo, setPraiseTo] = useState<string | null>(null);
 
@@ -108,6 +116,7 @@ export const PostScreen = () => {
   type PostFilter = "all" | "posts" | "praise" | "liked" | "repost" | "bookmark" | "pinned" | "report";
 
   const [currentPostList, setCurrentPostList] = useState<PostFilter>("all");
+  const [audienceError, setAudienceError] = useState<string>('');
 
   const changePostDate = (event: DateTimePickerEvent, date?: Date) => {
     setShowPicker(false);
@@ -131,13 +140,6 @@ export const PostScreen = () => {
     { id: 'General', title: 'General', desc: 'Post for general updates.', icon: '📘' },
     { id: 'Praise', title: 'Praise', desc: 'Celebrate and appreciate peers.', icon: '👏' },
     { id: 'Poll', title: 'Poll', desc: 'Create a poll to gather opinions.', icon: '📊' },
-  ];
-
-  const permissionOptions = [
-    { label: 'Likes', value: 'likes' },
-    { label: 'Comments', value: 'comments' },
-    { label: 'Repost', value: 'repost' },
-    { label: 'Share', value: 'share' },
   ];
 
   useEffect(() => {
@@ -346,9 +348,48 @@ export const PostScreen = () => {
   };
 
   const handleConfirmAudience = () => {
+    // reset old error
+    setAudienceError('');
+
+    // Case 1: Send to everyone -> always allowed
+    if (selectAll) {
+      setAudienceModalVisible(false);
+      setPostModalVisible(true);
+      return;
+    }
+
+    // Case 2: Departments mode -> must pick at least one dept
+    if (sectionSelection === 'departments') {
+      if (
+        !selectedAudience.departments ||
+        selectedAudience.departments.length === 0
+      ) {
+        setAudienceError('Please select at least one department.');
+        return;
+      }
+    }
+
+    // Case 3: Individuals mode -> must pick at least one user
+    if (sectionSelection === 'individuals') {
+      if (
+        !selectedAudience.individuals ||
+        selectedAudience.individuals.length === 0
+      ) {
+        setAudienceError('Please select at least one user.');
+        return;
+      }
+    }
+
+    if (!sectionSelection){
+      setAudienceError('Please select an audience.');
+      return;
+    }
+
+    // If we passed validation:
     setAudienceModalVisible(false);
     setPostModalVisible(true);
   };
+
 
   const openImageEditor = () => setImgModalVisible(true);
 
@@ -495,6 +536,24 @@ const handleCreate = async () => {
     await dispatch(fetchAnnouncements({ postName: "all", searchParam: "" }));
   };
 
+  const closePostModal = () => {
+    setModalVisible(false);
+    setSubject('');
+    setDescription('');
+    setPollOptions(['', '']);
+    setSelectedAudience({ departments: [], individuals: [] });
+    setSelectedParent([]);
+    setPraiseTo(null);
+    setSelectAll(false);
+    setSelectedImage(null);
+    setSectionSelection(null);
+  };
+
+  const closeAudienceModal = () => {
+    setAudienceModalVisible(false);
+    setModalVisible(true);
+  }
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f2f2f2' }}>
@@ -532,7 +591,7 @@ const handleCreate = async () => {
                 'repost',
                 'bookmark',
                 'pinned',
-                'report'
+                'report',
               ] as PostFilter[]
             ).map(option => (
               <TouchableOpacity
@@ -580,7 +639,7 @@ const handleCreate = async () => {
         </TouchableOpacity>
       </View>
       {/* --- Modal 1: Post Type --- */}
-      <AppModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+      <AppModal visible={modalVisible} onClose={() => closePostModal()}>
         <View style={styles.iconGeneralCircle}>
           <Volume2 size="20" color="#0E79B6" />
         </View>
@@ -648,7 +707,7 @@ const handleCreate = async () => {
       {/* --- Modal 2: Audience Selection --- */}
       <AppModal
         visible={audienceModalVisible}
-        onClose={() => setAudienceModalVisible(false)}
+        onClose={() => closeAudienceModal()}
       >
         <View style={styles.iconGeneralCircle}>
           <Volume2 size="20" color="#0E79B6" />
@@ -748,6 +807,9 @@ const handleCreate = async () => {
             );
           })}
         </ScrollView>
+        {audienceError ? (
+          <Text style={{ color: 'red', marginTop: 8 }}>{audienceError}</Text>
+        ) : null}
 
         <TouchableOpacity
           style={styles.confirmButton}
@@ -875,20 +937,17 @@ const handleCreate = async () => {
         )}
 
         <Text style={styles.subjectText}>Permissions</Text>
-        <Dropdown
+        <MultiSelect
           style={styles.dropdown}
           data={permissionOptions}
           labelField="label"
           valueField="value"
           placeholder="Select permissions"
-          value={selectedPermissions}
-          onChange={item =>
-            setSelectedPermissions(prev =>
-              prev.includes(item.value)
-                ? prev.filter(i => i !== item.value)
-                : [...prev, item.value],
-            )
-          }
+          value={selectedPermissions} // <-- this must be an array
+          onChange={newSelectedArray => {
+            // newSelectedArray will be array of values
+            setSelectedPermissions(newSelectedArray);
+          }}
           renderItem={item => {
             const isSelected = selectedPermissions.includes(item.value);
             return (
@@ -908,6 +967,32 @@ const handleCreate = async () => {
               </View>
             );
           }}
+          renderSelectedItem={(selectedItem, unSelect) => {
+            // optional: how chips/badges are shown under the input
+            return (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  margin: 4,
+                  borderRadius: 6,
+                  backgroundColor: '#E8F4FF',
+                }}
+              >
+                <Text style={{ marginRight: 6 }}>{selectedItem.label}</Text>
+                <TouchableWithoutFeedback
+                  onPress={() => unSelect && unSelect(selectedItem)}
+                >
+                  <Text style={{ fontSize: 12, color: '#999' }}>✕</Text>
+                </TouchableWithoutFeedback>
+              </View>
+            );
+          }}
+          search
+          searchPlaceholder="Search permissions"
+          inputSearchStyle={styles.searchInput}
         />
 
         <View style={styles.imgIconBlock}>
