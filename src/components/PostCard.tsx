@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   FlatList,
   Alert,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import Video from 'react-native-video';
 import ImageViewing from 'react-native-image-viewing';
@@ -118,15 +119,17 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   const [editPollQuestion, setEditPollQuestion] = useState('');
   const [editPollOptions, setEditPollOptions] = useState<string[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
 
-// validation errors
-const [editErrors, setEditErrors] = useState<{
-  subject?: string;
-  description?: string;
-  repostThought?: string;
-  pollQuestion?: string;
-  pollOption?: string;
-}>({});
+
+  // validation errors
+  const [editErrors, setEditErrors] = useState<{
+    subject?: string;
+    description?: string;
+    repostThought?: string;
+    pollQuestion?: string;
+    pollOption?: string;
+  }>({});
 
   const handleEmojiSelect = (emojiObject: any) => {
     setNewComment(prev => prev + emojiObject.emoji);
@@ -266,8 +269,14 @@ const [editErrors, setEditErrors] = useState<{
     }
   };
 
-  const openMenu = (id: number) => setVisibleMenuId(id);
-  const closeMenu = () => setVisibleMenuId(null);
+
+  const toggleMenu = useCallback(() => {
+    setMenuVisible(prev => !prev);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setMenuVisible(false);
+  }, []);
 
   // Start editing a comment
   const handleStartEdit = (comment: any) => {
@@ -833,114 +842,114 @@ const [editErrors, setEditErrors] = useState<{
     setEditPollOptions(prev => prev.filter((_, i) => i !== idx));
   };
 
-const onAddPollOption = () => {
-  setEditPollOptions(prev => [...prev, '']);
-};
-
-const handleConfirmUpdate = async () => {
-  const newErrors: any = {};
-
-  if (selectedAnnouncement?.reposted_by) {
-    // editing a repost: must have repost thought
-    if (!editRepostThought || !editRepostThought.trim()) {
-      newErrors.repostThought = 'Repost thought is required';
-    }
-  } else if (selectedAnnouncement?.type === 'poll') {
-    // editing a poll: question + all options required
-    if (!editPollQuestion || !editPollQuestion.trim()) {
-      newErrors.pollQuestion = 'Poll question is required';
-    }
-    const emptyIdx = editPollOptions.findIndex(opt => !opt || !opt.trim());
-    if (emptyIdx !== -1) {
-      newErrors.pollOption = 'Poll options cannot be empty.';
-    }
-  } else {
-    // normal post: subject + description
-    const trimmedSubj = editSubject ? editSubject.trim() : '';
-    const trimmedDesc = editDescription ? editDescription.trim() : '';
-
-    if (!trimmedSubj) {
-      newErrors.subject = 'Subject is required';
-    } else if (trimmedSubj.length > 200) {
-      newErrors.subject = 'Subject cannot exceed 200 characters';
-    }
-
-    if (!trimmedDesc) {
-      newErrors.description = 'Description is required';
-    }
-  }
-
-  if (Object.keys(newErrors).length > 0) {
-    setEditErrors(newErrors);
-    return;
-  }
-
-  const payload = {
-    announcement_id: selectedAnnouncement?.id,
-    notification_level: selectedAnnouncement?.notification_level,
-    schedule_announcement: selectedAnnouncement?.created_at,
-
-    subject:
-      selectedAnnouncement?.type === 'poll'
-        ? null
-        : editSubject?.trim() || null,
-
-    type: selectedAnnouncement?.type,
-
-    description:
-      selectedAnnouncement?.type === 'poll'
-        ? null
-        : editDescription?.trim() || null,
-
-    options: selectedAnnouncement?.type === 'poll' ? editPollOptions : null,
-
-    question:
-      selectedAnnouncement?.type === 'poll'
-        ? editPollQuestion?.trim() || null
-        : null,
-
-    status: 'Active',
-
-    repost_thought: selectedAnnouncement?.reposted_by
-      ? editRepostThought?.trim() || null
-      : null,
-
-    is_edited: true,
+  const onAddPollOption = () => {
+    setEditPollOptions(prev => [...prev, '']);
   };
 
-  const encoded = encodeData(payload);
+  const handleConfirmUpdate = async () => {
+    const newErrors: any = {};
 
-  try {
-    const res = await apiClient.put(API_ROUTES.UPDATE_ANNOUNCEMENT, {
-      payload: encoded,
-    });
+    if (selectedAnnouncement?.reposted_by) {
+      // editing a repost: must have repost thought
+      if (!editRepostThought || !editRepostThought.trim()) {
+        newErrors.repostThought = 'Repost thought is required';
+      }
+    } else if (selectedAnnouncement?.type === 'poll') {
+      // editing a poll: question + all options required
+      if (!editPollQuestion || !editPollQuestion.trim()) {
+        newErrors.pollQuestion = 'Poll question is required';
+      }
+      const emptyIdx = editPollOptions.findIndex(opt => !opt || !opt.trim());
+      if (emptyIdx !== -1) {
+        newErrors.pollOption = 'Poll options cannot be empty.';
+      }
+    } else {
+      // normal post: subject + description
+      const trimmedSubj = editSubject ? editSubject.trim() : '';
+      const trimmedDesc = editDescription ? editDescription.trim() : '';
 
-    if (res?.success) {
-      Toast.show({
-        type: 'success',
-        text1: 'Post updated',
+      if (!trimmedSubj) {
+        newErrors.subject = 'Subject is required';
+      } else if (trimmedSubj.length > 200) {
+        newErrors.subject = 'Subject cannot exceed 200 characters';
+      }
+
+      if (!trimmedDesc) {
+        newErrors.description = 'Description is required';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setEditErrors(newErrors);
+      return;
+    }
+
+    const payload = {
+      announcement_id: selectedAnnouncement?.id,
+      notification_level: selectedAnnouncement?.notification_level,
+      schedule_announcement: selectedAnnouncement?.created_at,
+
+      subject:
+        selectedAnnouncement?.type === 'poll'
+          ? null
+          : editSubject?.trim() || null,
+
+      type: selectedAnnouncement?.type,
+
+      description:
+        selectedAnnouncement?.type === 'poll'
+          ? null
+          : editDescription?.trim() || null,
+
+      options: selectedAnnouncement?.type === 'poll' ? editPollOptions : null,
+
+      question:
+        selectedAnnouncement?.type === 'poll'
+          ? editPollQuestion?.trim() || null
+          : null,
+
+      status: 'Active',
+
+      repost_thought: selectedAnnouncement?.reposted_by
+        ? editRepostThought?.trim() || null
+        : null,
+
+      is_edited: true,
+    };
+
+    const encoded = encodeData(payload);
+
+    try {
+      const res = await apiClient.put(API_ROUTES.UPDATE_ANNOUNCEMENT, {
+        payload: encoded,
       });
 
-      // refresh feed
-      dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
+      if (res?.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Post updated',
+        });
 
-      setShowEditModal(false);
+        // refresh feed
+        dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
 
-      setEditErrors({});
-    } else {
+        setShowEditModal(false);
+
+        setEditErrors({});
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: res?.data?.message || 'Failed to update post',
+        });
+      }
+    } catch (err: any) {
+      // request failed
       Toast.show({
         type: 'error',
-        text1: res?.data?.message || 'Failed to update post',
+        text1: 'Error updating post',
       });
     }
-  } catch (err: any) {
-    // request failed
-    Toast.show({
-      type: 'error',
-      text1: 'Error updating post',
-    });
-  }
-};
+  };
 
   useEffect(() => {
     dispatch(fetchUserData());
@@ -1519,40 +1528,65 @@ const handleConfirmUpdate = async () => {
           </View>
 
           {/* Menu */}
-          <View style={{ position: 'relative', zIndex: 10 }}>
-            <Menu
-              visible={visibleMenuId === announcement.id}
-              onDismiss={closeMenu}
-              anchor={
-                <View collapsable={false}>
-                  <TouchableOpacity
-                    onPress={() => openMenu(Number(announcement.id))}
-                    style={{ padding: 4 }}
-                  >
-                    <Text style={{ fontSize: 20 }}>⋮</Text>
-                  </TouchableOpacity>
-                </View>
-              }
-              anchorPosition="bottom"
-              contentStyle={{
-                backgroundColor: '#fff',
-                borderRadius: 8,
-                elevation: 6,
-                paddingVertical: 4,
-                width: 180,
-              }}
+          <View style={{ position: 'relative' }}>
+            {/* ⋮ button */}
+            <TouchableOpacity
+              onPress={toggleMenu}
+              style={{ padding: 4, alignSelf: 'flex-end' }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              {/* 🔹 Bookmark Option */}
-              <Menu.Item
-                onPress={handleBookmark}
+              <Text style={{ fontSize: 20 }}>⋮</Text>
+            </TouchableOpacity>
+
+            {/* overlay tap area to close menu when clicking outside */}
+            {menuVisible && (
+              <Pressable
+                onPress={closeMenu}
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  height: 44,
-                  paddingVertical: 4,
-                  paddingHorizontal: 12,
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  // transparent overlay to capture outside taps
+                  backgroundColor: 'transparent',
                 }}
-                title={
+              />
+            )}
+
+            {/* the dropdown menu card */}
+            {menuVisible && (
+              <View
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: 28, // a bit below the ⋮ button
+                  width: 180,
+                  backgroundColor: '#fff',
+                  borderRadius: 8,
+                  paddingVertical: 4,
+                  shadowColor: '#000',
+                  shadowOpacity: 0.15,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
+                  zIndex: 1000,
+                }}
+              >
+                {/* 🔹 Bookmark */}
+                <TouchableOpacity
+                  onPress={() => {
+                    closeMenu();
+                    handleBookmark(announcement);
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    height: 44,
+                    paddingVertical: 4,
+                    paddingHorizontal: 12,
+                  }}
+                >
                   <View
                     style={{
                       flexDirection: 'row',
@@ -1584,24 +1618,23 @@ const handleConfirmUpdate = async () => {
                         : 'Bookmark'}
                     </Text>
                   </View>
-                }
-              />
+                </TouchableOpacity>
 
-              {/* 🔹 NEW: Edit Post (only if current user can edit) */}
-              {canDelete && (
-                <Menu.Item
-                  onPress={() => {
-                    // open modal and seed fields
-                    handleEditPress(announcement);
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    height: 44,
-                    paddingVertical: 4,
-                    paddingHorizontal: 12,
-                  }}
-                  title={
+                {/* 🔹 Edit */}
+                {canDelete && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      closeMenu();
+                      handleEditPress(announcement);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      height: 44,
+                      paddingVertical: 4,
+                      paddingHorizontal: 12,
+                    }}
+                  >
                     <View
                       style={{
                         flexDirection: 'row',
@@ -1614,22 +1647,24 @@ const handleConfirmUpdate = async () => {
                         Edit Post
                       </Text>
                     </View>
-                  }
-                />
-              )}
+                  </TouchableOpacity>
+                )}
 
-              {/* 🔹 Delete Option (only for own post / repost) */}
-              {canDelete && (
-                <Menu.Item
-                  onPress={() => setShowDeleteModal(true)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    height: 44,
-                    paddingVertical: 4,
-                    paddingHorizontal: 12,
-                  }}
-                  title={
+                {/* 🔹 Delete */}
+                {canDelete && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      closeMenu();
+                      setShowDeleteModal(true);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      height: 44,
+                      paddingVertical: 4,
+                      paddingHorizontal: 12,
+                    }}
+                  >
                     <View
                       style={{
                         flexDirection: 'row',
@@ -1644,24 +1679,26 @@ const handleConfirmUpdate = async () => {
                           : 'Delete Post'}
                       </Text>
                     </View>
-                  }
+                  </TouchableOpacity>
+                )}
+
+                {/* 🔹 Pin / Unpin */}
+                <PostPinMenuItem
+                  announcement={announcement}
+                  userData={userData}
+                  pinnedUserList={pinnedUsers}
+                  closeMenu={closeMenu}
                 />
-              )}
 
-              <PostPinMenuItem
-                announcement={announcement}
-                userData={userData}
-                pinnedUserList={pinnedUsers}
-                closeMenu={closeMenu}
-              />
-
-              <PostReportMenuItem
-                announcement={announcement}
-                userData={userData}
-                closeMenu={closeMenu}
-                onOpenReport={handleOpenReportModal} // pass callback
-              />
-            </Menu>
+                {/* 🔹 Report */}
+                <PostReportMenuItem
+                  announcement={announcement}
+                  userData={userData}
+                  closeMenu={closeMenu}
+                  onOpenReport={handleOpenReportModal}
+                />
+              </View>
+            )}
           </View>
         </View>
 

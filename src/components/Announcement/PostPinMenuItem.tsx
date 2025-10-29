@@ -8,7 +8,7 @@ import { apiClient } from '@/services/api';
 import { API_ROUTES } from '@/constants/apiRoutes';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
-import { fetchAnnouncements } from '@/redux/slices/announcementSlice';
+import { fetchAnnouncements, fetchPinnedUsers } from '@/redux/slices/announcementSlice';
 
 interface PostPinMenuItemProps {
   announcement: any;
@@ -25,6 +25,9 @@ export const PostPinMenuItem: React.FC<PostPinMenuItemProps> = ({
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useState(false);
+  const { pinnedUsers } = useSelector(
+    (state: RootState) => state.announcements,
+  );
 
   // Determine whose post/repost it is
   const targetUserId = announcement?.reposted_by
@@ -32,7 +35,7 @@ export const PostPinMenuItem: React.FC<PostPinMenuItemProps> = ({
     : announcement?.createdByUser?.id;
 
   // Determine if user is already pinned
-  const isPinned = pinnedUserList?.some(
+  const isPinned = pinnedUsers?.some(
     (u: any) => u?.pin_user_id === targetUserId,
   );
 
@@ -56,6 +59,7 @@ export const PostPinMenuItem: React.FC<PostPinMenuItemProps> = ({
             : 'User pinned successfully',
         });
         dispatch(fetchAnnouncements());
+        dispatch(fetchPinnedUsers());
       } else {
         Toast.show({
           type: 'error',
@@ -77,41 +81,41 @@ export const PostPinMenuItem: React.FC<PostPinMenuItemProps> = ({
   if (userData?.id === announcement?.createdByUser?.id) return null;
 
   return (
-    <Menu.Item
-      onPress={handlePinUser}
+    <TouchableOpacity
       disabled={loading}
+      onPress={handlePinUser}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         height: 44,
         paddingVertical: 4,
         paddingHorizontal: 12,
+        opacity: loading ? 0.5 : 1,
       }}
-      title={
-        <View
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        {isPinned ? (
+          <PinOff size={18} color="#007AFF" />
+        ) : (
+          <Pin size={18} color="#333" />
+        )}
+
+        <Text
           style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            opacity: loading ? 0.5 : 1,
+            fontSize: 15,
+            color: isPinned ? '#007AFF' : '#333',
+            fontWeight: '500',
           }}
         >
-          {isPinned ? (
-            <PinOff size={18} color="#007AFF" />
-          ) : (
-            <Pin size={18} color="#333" />
-          )}
-          <Text
-            style={{
-              fontSize: 15,
-              color: isPinned ? '#007AFF' : '#333',
-              fontWeight: '500',
-            }}
-          >
-            {isPinned ? 'Unpin User' : 'Pin User'}
-          </Text>
-        </View>
-      }
-    />
+          {isPinned ? 'Unpin User' : 'Pin User'}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 };

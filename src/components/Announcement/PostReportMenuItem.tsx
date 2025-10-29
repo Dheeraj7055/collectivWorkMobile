@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { Menu } from 'react-native-paper';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Flag } from 'lucide-react-native';
 
 interface PostReportMenuItemProps {
   announcement: any;
   userData: any;
-  onOpenReport: (announcement: any) => void; // 👈 lifted handler
+  onOpenReport: (announcement: any) => void;
   closeMenu: () => void;
 }
 
@@ -16,7 +15,7 @@ export const PostReportMenuItem: React.FC<PostReportMenuItemProps> = ({
   onOpenReport,
   closeMenu,
 }) => {
-  // Hide report option if user owns the post/repost
+  // Hide "Report" option if it's your own post/repost
   const canReport =
     announcement?.reposted_by
       ? announcement?.reposted_by !== userData?.id && announcement?.repost_thought
@@ -24,12 +23,14 @@ export const PostReportMenuItem: React.FC<PostReportMenuItemProps> = ({
 
   if (!canReport) return null;
 
+  const handleReportPress = () => {
+    closeMenu();
+    onOpenReport(announcement);
+  };
+
   return (
-    <Menu.Item
-      onPress={() => {
-        closeMenu();
-        onOpenReport(announcement);
-      }}
+    <TouchableOpacity
+      onPress={handleReportPress}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -37,12 +38,26 @@ export const PostReportMenuItem: React.FC<PostReportMenuItemProps> = ({
         paddingVertical: 4,
         paddingHorizontal: 12,
       }}
-      title={
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Flag size={18} color="#E53935" />
-          <Text style={{ fontSize: 15, color: '#E53935' }}>Report</Text>
-        </View>
-      }
-    />
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <Flag size={18} color="#E53935" />
+        <Text
+          style={{
+            fontSize: 15,
+            color: '#E53935',
+            fontWeight: '500',
+          }}
+        >
+          Report
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 };
+
