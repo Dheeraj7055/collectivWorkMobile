@@ -469,7 +469,7 @@ export const AttendanceScreen: React.FC = () => {
             <View style={styles.shiftRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.shiftTitle}>
-                  {selectedDay?.shift_name || 'No Shift'}
+                  {selectedDay?.shift_name || 'Shift Timing'}
                 </Text>
                 <Text style={styles.shiftTime}>
                   {selectedDay?.shift_timing
