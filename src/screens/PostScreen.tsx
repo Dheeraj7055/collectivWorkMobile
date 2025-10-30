@@ -414,53 +414,60 @@ export const PostScreen = () => {
   };
 
   const mergeMentionedUsers = () => {
-    // ✅ merge individual IDs from state
-    const updatedIndividualsIds = Array.from(
-      new Set([...selectedAudience.individuals, ...selectedParent]),
-    );
+  // ✅ merge individual IDs from state
+  const updatedIndividualsIds = Array.from(
+    new Set([...selectedAudience.individuals, ...selectedParent]),
+  );
 
-    // ✅ build departments object list (same as addAudience)
-    const mergedDepartments = departmentNames
-      .filter(d => selectedAudience.departments.includes(String(d.id)))
-      .map(d => ({
-        id: d.id,
-        name: d.label,
-        userList: d.userList || [],
-      }));
+  // ✅ build departments object list (same as addAudience)
+  const mergedDepartments = departmentNames
+    .filter(d => selectedAudience.departments.includes(String(d.id)))
+    .map(d => ({
+      id: d.id,
+      name: d.label,
+      userList: d.userList || [],
+    }));
 
-    // ✅ build individuals object list
-    const mergedIndividuals = names
-      .filter(u => updatedIndividualsIds.includes(String(u.id)))
-      .map(u => ({
-        id: u.id,
-        firstName: u.first_name,
-        lastName: u.last_name,
-        email: u.email,
-        image_url: u.image_url,
-        profile_color: u.profile_color,
-      }));
+  // ✅ build individuals object list
+  const mergedIndividuals = names
+    .filter(u => updatedIndividualsIds.includes(String(u.id)))
+    .map(u => ({
+      id: u.id,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      email: u.email,
+      image_url: u.image_url,
+      profile_color: u.profile_color,
+    }));
 
-    // ✅ final object for API payload
-    const updatedGeneralFormData = {
-      departments: mergedDepartments,
-      individuals: mergedIndividuals,
-    };
+  // ✅ create array of { id, name } from mergedIndividuals
+  const selectedUsers = mergedIndividuals.map(u => ({
+    id: u.id,
+    name: `${u.firstName} ${u.lastName}`.trim(),
+  }));
 
-    return { updatedIndividuals: mergedIndividuals, updatedGeneralFormData };
+  // ✅ final object for API payload
+  const updatedGeneralFormData = {
+    departments: mergedDepartments,
+    individuals: mergedIndividuals,
   };
+
+  return { selectedUsers, updatedGeneralFormData };
+};
+
 
 const handleCreate = async () => {
   try {
-    const { updatedIndividuals, updatedGeneralFormData } = mergeMentionedUsers();
+    const { selectedUsers, updatedGeneralFormData } = mergeMentionedUsers();
 
     // 🔹 Build payload
     const payload = {
       announcement_id: null,
       select_audience: updatedGeneralFormData,
+      selected_users: selectedUsers,
       notification_level: selectAll ? "All" : "selection",
       schedule_announcement: selectedDate.toISOString(),
       subject: selectedOption === "Poll" ? null : subject,
-      // selected_users: updatedIndividuals,
       type: selectedOption.toLowerCase(),
       description: selectedOption === "Poll" ? null : description,
       options: selectedOption === "Poll" ? pollOptions : null,
