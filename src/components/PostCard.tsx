@@ -168,10 +168,10 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
 
       if (response?.data && response?.success) {
         const newEntry: CommentItem = {
-          id: Date.now().toString(),
+          id: response?.data?.id,
           comment: newComment,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: response?.data?.created_at,
+          updated_at: response?.data?.updated_at,
           User: {
             id: userData.id,
             first_name: userData.first_name || '',
