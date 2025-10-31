@@ -1200,9 +1200,9 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
               onChangeText={setNewComment}
             />
 
-            <TouchableOpacity onPress={() => setIsEmojiPickerOpen(true)}>
+            {/* <TouchableOpacity onPress={() => setIsEmojiPickerOpen(true)}>
               <Text style={{ fontSize: 20, marginRight: 6 }}>😊</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
 
