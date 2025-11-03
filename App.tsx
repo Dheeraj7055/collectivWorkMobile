@@ -5,12 +5,14 @@ import { store } from './src/redux/store';
 import { RootNavigator } from './src/navigation';
 import { lightTheme } from './src/themes/colors';
 import Toast from 'react-native-toast-message';
+import NoInternetBar from '@/components/NoInternetBar';
 
 const App: React.FC = () => {
   return (
     <Provider store={store}>
       <PaperProvider theme={lightTheme}>
         <Portal.Host>
+          <NoInternetBar />
           <RootNavigator />
           <Toast position="top" topOffset={50} visibilityTime={3000} />
         </Portal.Host>

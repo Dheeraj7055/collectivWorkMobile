@@ -70,6 +70,7 @@ export const AttendanceScreen: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<any>(null);
   const [showRegularizeModal, setShowRegularizeModal] = useState(false);
 
+
   const punchOptions = useMemo(() => {
     const options: { label: string; type: string }[] = [];
     if (
@@ -505,13 +506,13 @@ export const AttendanceScreen: React.FC = () => {
             </View>
             {/* Actions */}
             <View style={styles.rowBetweenBorder}>
-              <TouchableOpacity
+              {!selectedDay?.holiday  && <TouchableOpacity
                 style={styles.actionRow}
                 onPress={() => openRegularizeModal()} // 🔹 open modal
               >
                 <Edit2 size={16} color="#0E79B6" />
                 <Text style={styles.link}> Regularize</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>}
               <TouchableOpacity 
                 style={styles.actionRow}
                 onPress={() => navigation.navigate('Leave', { openModal: true })}
