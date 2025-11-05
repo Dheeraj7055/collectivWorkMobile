@@ -12,6 +12,11 @@ export const headerStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
+  headerRightBlock: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: "center",
+  },
   title: {
     fontSize: 20,
     fontWeight: "bold",

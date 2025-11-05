@@ -8,6 +8,7 @@ import departmentReducer from './slices/departmentSlice';
 import leaveReducer from './slices/leaveSlice';
 import locationReducer from './slices/locationSlices';
 import profileScreenReducer from './slices/profileScreenSlice';
+import notificationReducer from './slices/notificationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     leave: leaveReducer,
     location: locationReducer,
     profileScreen: profileScreenReducer,
+    notifications: notificationReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

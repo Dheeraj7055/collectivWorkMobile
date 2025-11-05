@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
 import { fetchAttendance } from '@/redux/slices/attendanceSlice';
 import { headerStyles } from '../styles/headerStyles';
+import { Bell } from 'lucide-react-native';
+import { NotificationsBell } from './NotificationsBell';
 
 export const Header: React.FC<{ title: string }> = ({ title }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -94,15 +96,18 @@ export const Header: React.FC<{ title: string }> = ({ title }) => {
       />
 
       {/* Timer */}
-      <View style={headerStyles.timerRow}>
-        <View style={headerStyles.timerBox}>
-          <Text style={headerStyles.timerText}>{hh}</Text>
-        </View>
-        <View style={headerStyles.timerBox}>
-          <Text style={headerStyles.timerText}>{mm}</Text>
-        </View>
-        <View style={headerStyles.timerBox}>
-          <Text style={headerStyles.timerText}>{ss}</Text>
+      <View style={headerStyles.headerRightBlock}>
+        <NotificationsBell />
+        <View style={headerStyles.timerRow}>
+          <View style={headerStyles.timerBox}>
+            <Text style={headerStyles.timerText}>{hh}</Text>
+          </View>
+          <View style={headerStyles.timerBox}>
+            <Text style={headerStyles.timerText}>{mm}</Text>
+          </View>
+          <View style={headerStyles.timerBox}>
+            <Text style={headerStyles.timerText}>{ss}</Text>
+          </View>
         </View>
       </View>
     </View>
