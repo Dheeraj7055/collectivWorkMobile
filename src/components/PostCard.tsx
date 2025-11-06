@@ -951,6 +951,11 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
     }
   };
 
+  const openCommentModal = (data: Announcement) => {
+    setCommentModalVisible(true);
+    setPostComments(announcement?.Comments ?? []);
+  }
+
   useEffect(() => {
     dispatch(fetchUserData());
   }, [dispatch]);
@@ -2088,7 +2093,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
           </View>
 
           <TouchableOpacity
-            onPress={() => setCommentModalVisible(true)}
+            onPress={() => openCommentModal(announcement)}
             style={styles.actionButton}
           >
             <View
