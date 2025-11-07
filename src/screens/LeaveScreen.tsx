@@ -676,6 +676,7 @@ export const LeaveScreen: React.FC = () => {
   const reloadLeaves = async () => {
     const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
     await dispatch(fetchLeaves(payload) as any);
+    await dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
   };
 
 
