@@ -163,7 +163,7 @@ export default function NotificationsScreen() {
         searchTerm: '',
         isPagination: true,
         module_name: 'HRMS',
-        append: true, // 👈 append next page
+        append: true, // append next page
       }),
     );
   }, [dispatch, loading, loadingMore, page, totalPages]);

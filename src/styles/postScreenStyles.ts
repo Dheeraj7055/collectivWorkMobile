@@ -145,7 +145,12 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     // marginTop: ,
-    marginBottom: 8,
+    marginTop: 20,
+    color: '#333',
+  },
+  titleText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#333',
   },
   dropdown: {
@@ -200,8 +205,9 @@ export const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 10,
-    marginBottom: 16,
+    // marginBottom: 16,
     backgroundColor: '#fff',
+    marginTop: 3
   },
   textarea: {
     height: 100,
@@ -230,6 +236,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 10,
     gap: 8,
+    alignItems: 'center'
   },
   buttonRow: {
     flexDirection: 'row',
@@ -305,6 +312,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
+    marginTop: 20
   },
   optionRow: {
     flexDirection: 'row',

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import ImagePreviewScreen from '@/screens/ImagePreviewScreen';
 import NotificationsScreen from '@/screens/NotificationsScreen';
+import { PostDetailScreen } from '@/screens/PostDetailScreen';
 
 const ChatScreen = () => <Text>Chat Screen</Text>;
 
@@ -39,6 +40,7 @@ export type MainTabParamList = {
   Leave: { openModal?: boolean };
   Profile: undefined;
   Notifications: undefined;
+  PostDetail: { postId?: number; announcement?: any };
 };
 
 export type AppStackParamList = {
@@ -46,7 +48,6 @@ export type AppStackParamList = {
   Bookmarks: undefined;
   LeaveRequestDetail: { leave_id: string | number };
   ImagePreviewScreen: { imageUrl: string };
-  // Notifications: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -142,6 +143,15 @@ const MainTabs: React.FC = () => {
           tabBarItemStyle: { display: 'none' },
         }}
       />
+
+      <Tab.Screen
+        name="PostDetail"
+        component={PostDetailScreen}
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
+        }}
+      />
     </Tab.Navigator>
   );
 };
@@ -176,6 +186,8 @@ export const AppNavigator: React.FC = () => {
       </Stack.Screen>
 
       <Stack.Screen name="ImagePreviewScreen" component={ImagePreviewScreen} />
+
+      {/* <Stack.Screen name="PostDetail" component={PostDetailScreen} /> */}
     </Stack.Navigator>
   );
 };

@@ -23,6 +23,7 @@ export const API_ROUTES = {
   REMOVE_PIN_USER: '/api/announcement/remove/pin/user',
   PIN_USER_LIST: '/api/announcement/pin/user',
   REPORT_ANNOUNCEMENT: '/api/announcement/report',
+  AI_CONTENT_GENERATOR: '/api/application/generate/content',
 
 
   //other
