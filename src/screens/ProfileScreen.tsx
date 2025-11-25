@@ -563,6 +563,13 @@ export const ProfileScreen: React.FC = () => {
               </View>
               <View style={styles.separator} />
               <View style={styles.row}>
+                <Text style={styles.label}>Date of Birth</Text>
+                <Text style={styles.value}>
+                  {moment(userData?.birthday).format('DD-MMM-YYYY')}
+                </Text>
+              </View>
+              <View style={styles.separator} />
+              <View style={styles.row}>
                 <Text style={styles.label}>Gender</Text>
                 <Text style={styles.value}>
                   {userData?.user?.gender ? userData?.user?.gender : ''}
@@ -600,6 +607,19 @@ export const ProfileScreen: React.FC = () => {
                 </Text>
               </View>
               <View style={styles.separator} />
+              <View style={styles.row}>
+                <Text style={styles.label}>Address</Text>
+                <Text style={styles.value}>
+                  {userData?.address ? userData?.address : '-'}
+                </Text>
+              </View>
+              <View style={styles.separator} />
+              <View style={styles.row}>
+                <Text style={styles.label}>Employement Status</Text>
+                <Text style={styles.value}>
+                  {userData?.employment_status ? userData?.employment_status : '-'}
+                </Text>
+              </View>
             </View>
 
             {/* Logout Button */}

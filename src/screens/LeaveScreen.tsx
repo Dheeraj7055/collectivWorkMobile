@@ -45,6 +45,7 @@ import ConfirmationModal from '@/common/ConfirmationModal';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { RefreshableList } from '@/common/RefreshableList';
+import { Snackbar } from 'react-native-paper';
 
 type LeaveScreenRoute = RouteProp<MainTabParamList, 'Leave'>;
 
@@ -118,6 +119,10 @@ export const LeaveScreen: React.FC = () => {
   const [description, setDescription] = useState('');
   const [subject, setSubject] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [snackbar, setSnackbar] = useState({
+    visible: false,
+    message: '',
+  });
 
   // Quota & Balance
   const [allowBeyondQuota, setAllowBeyondQuota] = useState(false);
@@ -574,7 +579,10 @@ export const LeaveScreen: React.FC = () => {
           setLeaveModalVisible(false);
         })
         .catch(err => {
-          console.error('Leave creation failed', err);
+          setSnackbar({
+            visible: true,
+            message: err || 'Something went wrong',
+          });
         });
     }
   };
@@ -767,7 +775,7 @@ export const LeaveScreen: React.FC = () => {
               </Text>
               <RNPickerSelect
                 onValueChange={(value: string | null, _index: number) => {
-                  handleDay(value)
+                  handleDay(value);
                   clearError('dayType');
                 }}
                 items={[
@@ -811,9 +819,11 @@ export const LeaveScreen: React.FC = () => {
                   <Text style={styles.label}>
                     On <Text style={{ color: 'red' }}>*</Text>
                   </Text>
-                  {renderFakeInput('Select Date', startDate, () =>
-                    setActivePicker('single'),
-                    'startDate'
+                  {renderFakeInput(
+                    'Select Date',
+                    startDate,
+                    () => setActivePicker('single'),
+                    'startDate',
                   )}
                   {formErrors.startDate && (
                     <Text style={styles.errorText}>{formErrors.startDate}</Text>
@@ -823,15 +833,17 @@ export const LeaveScreen: React.FC = () => {
 
               {/* Multiple Days */}
               {dayType === 'multiple' && (
-                <View>
+                <View style={styles.multipleBlock}>
                   {/* From */}
-                  <View style={styles.field}>
+                  <View style={styles.fieldHalf}>
                     <Text style={styles.label}>
                       From <Text style={{ color: 'red' }}>*</Text>
                     </Text>
-                    {renderFakeInput('Select Start Date', startDate, () =>
-                      setActivePicker('multiStart'),
-                      'startDate'
+                    {renderFakeInput(
+                      'Select Start Date',
+                      startDate,
+                      () => setActivePicker('multiStart'),
+                      'startDate',
                     )}
                     {formErrors.startDate && (
                       <Text style={styles.errorText}>
@@ -841,14 +853,14 @@ export const LeaveScreen: React.FC = () => {
                   </View>
 
                   {/* Start Half */}
-                  <View style={styles.field}>
+                  <View style={styles.fieldHalf}>
                     <Text style={styles.label}>
                       Select Half <Text style={{ color: 'red' }}>*</Text>
                     </Text>
                     <RNPickerSelect
                       onValueChange={val => {
-                         setStartHalf(val);
-                         clearError('startHalf');
+                        setStartHalf(val);
+                        clearError('startHalf');
                       }}
                       items={[
                         { label: 'First Half', value: 'first_half' },
@@ -867,13 +879,15 @@ export const LeaveScreen: React.FC = () => {
                   </View>
 
                   {/* To */}
-                  <View style={styles.field}>
+                  <View style={styles.fieldHalf}>
                     <Text style={styles.label}>
                       To <Text style={{ color: 'red' }}>*</Text>
                     </Text>
-                    {renderFakeInput('Select End Date', endDate, () =>
-                      setActivePicker('multiEnd'),
-                      'endDate'
+                    {renderFakeInput(
+                      'Select End Date',
+                      endDate,
+                      () => setActivePicker('multiEnd'),
+                      'endDate',
                     )}
                     {formErrors.endDate && (
                       <Text style={styles.errorText}>{formErrors.endDate}</Text>
@@ -881,14 +895,14 @@ export const LeaveScreen: React.FC = () => {
                   </View>
 
                   {/* End Half */}
-                  <View style={styles.field}>
+                  <View style={styles.fieldHalf}>
                     <Text style={styles.label}>
                       Select Half <Text style={{ color: 'red' }}>*</Text>
                     </Text>
                     <RNPickerSelect
                       onValueChange={val => {
                         setEndHalf(val);
-                        clearError('endHalf')
+                        clearError('endHalf');
                       }}
                       items={[
                         { label: 'First Half', value: 'first_half' },
@@ -912,9 +926,11 @@ export const LeaveScreen: React.FC = () => {
                   <Text style={styles.label}>
                     On <Text style={{ color: 'red' }}>*</Text>
                   </Text>
-                  {renderFakeInput('Select Date', startDate, () =>
-                    setActivePicker('halfShort'),
-                    'startDate'
+                  {renderFakeInput(
+                    'Select Date',
+                    startDate,
+                    () => setActivePicker('halfShort'),
+                    'startDate',
                   )}
                   {formErrors.startDate && (
                     <Text style={styles.errorText}>{formErrors.startDate}</Text>
@@ -1205,6 +1221,18 @@ export const LeaveScreen: React.FC = () => {
             <Text style={styles.submitText}>Submit</Text>
           </TouchableOpacity>
         </View>
+        <Snackbar
+          visible={snackbar.visible}
+          onDismiss={() => setSnackbar({ ...snackbar, visible: false })}
+          duration={3000}
+          style={{
+            backgroundColor: '#E53935',
+            borderRadius: 8,
+            top: -100,
+          }}
+        >
+          {snackbar.message}
+        </Snackbar>
       </AppModal>
 
       <ConfirmationModal

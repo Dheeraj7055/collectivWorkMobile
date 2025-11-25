@@ -33,24 +33,24 @@ api.interceptors.request.use(
 
       // Debug FormData parts (React Native FormData has `_parts`)
       const parts = (config.data as any)._parts || [];
-      console.log(
-        '[API REQUEST]',
-        config.method?.toUpperCase(),
-        `${config.baseURL}${config.url}`,
-        '\nFormData:',
-        parts.map(
-          (p: any) =>
-            `${p[0]}=${typeof p[1] === 'object' ? JSON.stringify(p[1]) : p[1]}`,
-        ),
-      );
+      // console.log(
+      //   '[API REQUEST]',
+      //   config.method?.toUpperCase(),
+      //   `${config.baseURL}${config.url}`,
+      //   '\nFormData:',
+      //   parts.map(
+      //     (p: any) =>
+      //       `${p[0]}=${typeof p[1] === 'object' ? JSON.stringify(p[1]) : p[1]}`,
+      //   ),
+      // );
     } else {
       config.headers.set('Content-Type', 'application/json');
-      console.log(
-        '[API REQUEST]',
-        config.method?.toUpperCase(),
-        `${config.baseURL}${config.url}`,
-        config.data ? `\nPayload: ${JSON.stringify(config.data)}` : '',
-      );
+      // console.log(
+      //   '[API REQUEST]',
+      //   config.method?.toUpperCase(),
+      //   `${config.baseURL}${config.url}`,
+      //   config.data ? `\nPayload: ${JSON.stringify(config.data)}` : '',
+      // );
     }
 
     return config;
@@ -61,20 +61,20 @@ api.interceptors.request.use(
 // Response Interceptor
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log(
-      '[API RESPONSE]',
-      response.config.url,
-      '\nStatus:',
-      response.status,
-      '\nData:',
-      JSON.stringify(response.data),
-    );
+    // console.log(
+    //   '[API RESPONSE]',
+    //   response.config.url,
+    //   '\nStatus:',
+    //   response.status,
+    //   '\nData:',
+    //   JSON.stringify(response.data),
+    // );
     return response;
   },
   async error => {
     // Network / request setup errors
     if (!error.response) {
-      console.error('[API NETWORK/SETUP ERROR]', error.message);
+      // console.error('[API NETWORK/SETUP ERROR]', error.message);
       const e = new Error('Network error. Please check your connection.');
       (e as any).isNetworkError = true;
       return Promise.reject(e);
@@ -107,15 +107,15 @@ api.interceptors.response.use(
     normalizedError.url = url;
     normalizedError.code = status;
 
-    console.error(
-      '[API RESPONSE ERROR]',
-      'Status:',
-      status,
-      'URL:',
-      url,
-      'Data:',
-      JSON.stringify(data),
-    );
+    // console.error(
+    //   '[API RESPONSE ERROR]',
+    //   'Status:',
+    //   status,
+    //   'URL:',
+    //   url,
+    //   'Data:',
+    //   JSON.stringify(data),
+    // );
 
     // 🔐 Auto-logout on 401 (keep your logic)
     if (status === 401) {

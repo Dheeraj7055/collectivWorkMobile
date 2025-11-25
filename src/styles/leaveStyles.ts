@@ -254,6 +254,14 @@ export const styles = StyleSheet.create({
   field: {
     marginBottom: 5,
   },
+  fieldHalf: {
+    width: '48%'
+  },
+  multipleBlock: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap'
+  },
   totalLeaveText: {
     fontSize: 14,
     color: '#333',
