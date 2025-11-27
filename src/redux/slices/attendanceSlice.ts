@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { attendanceService } from '@/services/attendanceService';
 import { encodeData } from '@/utils/cryptoHelpers';
 import { RootState } from '../store';
+import Toast from 'react-native-toast-message';
 
 export interface AttendanceActivity {
   id: string | number;
@@ -131,6 +132,17 @@ export const punchIn = createAsyncThunk<
     const res = await attendanceService.punchIn({ payload });
     return res.data as AttendanceRecord;
   } catch (err: any) {
+    const message =
+      err?.message ||
+      'Something went wrong. Please try again.';
+
+    Toast.show({
+      type: 'error',
+      text1: 'Error',
+      text2: message,
+      position: 'top',      // or 'bottom'
+      visibilityTime: 4000, // ms
+    });
     return rejectWithValue(err.message || 'Punch in failed');
   }
 });

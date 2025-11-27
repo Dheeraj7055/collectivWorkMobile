@@ -603,6 +603,7 @@ export const LeaveScreen: React.FC = () => {
         setWithdrawModalVisible(false);
         const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
         dispatch(fetchLeaves(payload) as any);
+        dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }))
       })
       .catch(err => {
         console.error('Withdraw failed', err);

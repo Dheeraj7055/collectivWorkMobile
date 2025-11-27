@@ -14,7 +14,7 @@ const App: React.FC = () => {
         <Portal.Host>
           <NoInternetBar />
           <RootNavigator />
-          <Toast position="top" topOffset={50} visibilityTime={3000} />
+          <Toast position="top" topOffset={70} visibilityTime={3000} />
         </Portal.Host>
       </PaperProvider>
     </Provider>
