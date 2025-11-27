@@ -8,6 +8,59 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
   },
+  leaveInputWrapper: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+  },
+
+  leavePlaceholderText: {
+    color: '#999',
+    fontSize: 14,
+  },
+
+  leaveValueText: {
+    color: '#000',
+    fontSize: 14,
+  },
+
+  leaveArrow: {
+    fontSize: 14,
+    color: '#555',
+  },
+
+  leaveDropdown: {
+    position: 'absolute',
+    top: 45,                // list BELOW the input
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    zIndex: 9999,          // ensure it floats above everything
+    elevation: 5,          // Android shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+
+  leaveOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+
+  leaveOptionText: {
+    fontSize: 14,
+    color: '#000',
+  },
+
   card: {
     width: '100%',
     alignItems: 'center',
@@ -321,62 +374,62 @@ export const styles = StyleSheet.create({
   infoText: { fontSize: 12, color: '#999', marginTop: 4 },
   removeBtn: { marginTop: 6 },
   previewRow: {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  alignItems: "center",
-  marginVertical: 8,
-},
-previewWrapper: {
-  position: "relative",
-  marginRight: 8,
-  marginBottom: 8,
-},
-previewImage: {
-  width: 70,
-  height: 70,
-  borderRadius: 6,
-  borderWidth: 1,
-  borderColor: "#ccc",
-},
-deleteIcon: {
-  position: "absolute",
-  top: -6,
-  right: -6,
-  backgroundColor: "rgba(0,0,0,0.6)",
-  borderRadius: 12,
-  width: 24,
-  height: 24,
-  justifyContent: "center",
-  alignItems: "center",
-},
-modalOverlay: {
-  flex: 1,
-  backgroundColor: "rgba(0,0,0,0.7)",
-  justifyContent: "center",
-  alignItems: "center",
-},
-modalContent: {
-  width: "90%",
-  height: "80%",
-  backgroundColor: "#000",
-  borderRadius: 8,
-  overflow: "hidden",
-},
-modalImage: {
-  flex: 1,
-  width: "100%",
-},
-closeIcon: {
-  position: "absolute",
-  top: 10,
-  right: 10,
-  backgroundColor: "rgba(0,0,0,0.6)",
-  borderRadius: 15,
-  width: 30,
-  height: 30,
-  justifyContent: "center",
-  alignItems: "center",
-},
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+  previewWrapper: {
+    position: "relative",
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  previewImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#ccc",
+  },
+  deleteIcon: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    height: "80%",
+    backgroundColor: "#000",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  modalImage: {
+    flex: 1,
+    width: "100%",
+  },
+  closeIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
 });
 
@@ -404,4 +457,5 @@ export const pickerSelectStyles = StyleSheet.create({
   placeholder: {
     color: '#888',
   },
+  
 });

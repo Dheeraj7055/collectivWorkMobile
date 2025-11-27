@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
 import { ProgressCircle } from 'react-native-svg-charts';
 import { styles, pickerSelectStyles } from '@/styles/leaveStyles';
@@ -45,6 +46,7 @@ import ConfirmationModal from '@/common/ConfirmationModal';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { RefreshableList } from '@/common/RefreshableList';
+import { Picker as NativePicker } from '@react-native-picker/picker';
 
 type LeaveScreenRoute = RouteProp<MainTabParamList, 'Leave'>;
 
@@ -142,6 +144,8 @@ export const LeaveScreen: React.FC = () => {
   const [leaveClubedNotAllowed, setLeaveClubedNotAllowed] = useState<string[]>(
     [],
   );
+  const [isLeaveTypeOpen, setIsLeaveTypeOpen] = useState(false);
+  const [isDayTypeOpen, setIsDayTypeOpen] = useState(false);
 
   // Leave Duration Config
   const [allowedShortHalfday, setAllowedShortHalfday] = useState<{
@@ -178,6 +182,20 @@ export const LeaveScreen: React.FC = () => {
   const { records: leaveRequests } = useSelector(
     (state: RootState) => state.leave,
   );
+
+  const dayTypeItems = [
+  ...(allowedShortHalfday?.allow_short_leave
+    ? [{ label: 'Short Day Leave', value: 'short' as const }]
+    : []),
+  ...(allowedShortHalfday?.allow_half_day_leave
+    ? [{ label: 'Half Day Leave', value: 'half' as const }]
+    : []),
+  { label: 'Single Day Leave', value: 'single' as const },
+  { label: 'Multiple Day Leave', value: 'multiple' as const },
+];
+
+const selectedDayTypeLabel =
+  dayTypeItems.find(item => item.value === dayType)?.label || '';
 
   const getLeaveDurationLabel = (no_of_days: number) => {
     if (no_of_days === 1) return 'Single Day';
@@ -715,20 +733,64 @@ export const LeaveScreen: React.FC = () => {
               <Text style={styles.label}>
                 Leave Type <Text style={{ color: 'red' }}>*</Text>
               </Text>
-              <RNPickerSelect
-                onValueChange={value => {
-                  handleLeaveChange(value, 'leave_duration');
-                  clearError('leaveType');
-                }}
-                items={leaveListOptions.map(lt => ({
-                  label: lt,
-                  value: lt,
-                }))}
-                placeholder={{ label: 'Select Leave Type', value: '' }}
-                value={selectedLeaveType}
-                style={pickerSelectStyles}
-                useNativeAndroidPickerStyle={false}
-              />
+              {Platform.OS === 'ios' ? (
+                <View style={{ position: 'relative' }}>
+                  {/* Input */}
+                  <TouchableOpacity
+                    style={[styles.leaveInputWrapper, { height: 42 }]}
+                    onPress={() => setIsLeaveTypeOpen(prev => !prev)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={
+                        selectedLeaveType
+                          ? styles.leaveValueText
+                          : styles.leavePlaceholderText
+                      }
+                    >
+                      {selectedLeaveType || 'Select Leave Type'}
+                    </Text>
+
+                    <Text style={styles.leaveArrow}>▾</Text>
+                  </TouchableOpacity>
+
+                  {/* Floating Dropdown */}
+                  {isLeaveTypeOpen && (
+                    <View style={styles.leaveDropdown}>
+                      <ScrollView style={{ maxHeight: 200 }}>
+                        {leaveListOptions.map(lt => (
+                          <TouchableOpacity
+                            key={lt}
+                            style={styles.leaveOption}
+                            onPress={() => {
+                              setIsLeaveTypeOpen(false);
+                              handleLeaveChange(lt, 'leave_duration');
+                              clearError('leaveType');
+                            }}
+                          >
+                            <Text style={styles.leaveOptionText}>{lt}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <RNPickerSelect
+                  onValueChange={value => {
+                    handleLeaveChange(value, 'leave_duration');
+                    clearError('leaveType');
+                  }}
+                  items={leaveListOptions.map(lt => ({
+                    label: lt,
+                    value: lt,
+                  }))}
+                  placeholder={{ label: 'Select Leave Type', value: null }}
+                  value={selectedLeaveType}
+                  style={pickerSelectStyles}
+                  useNativeAndroidPickerStyle={false}
+                />
+              )}
               {formErrors.leaveType && (
                 <Text style={styles.errorText}>{formErrors.leaveType}</Text>
               )}
@@ -764,7 +826,7 @@ export const LeaveScreen: React.FC = () => {
                 Leave Duration (Day or Days){' '}
                 <Text style={{ color: 'red' }}>*</Text>
               </Text>
-              <RNPickerSelect
+              {/* <RNPickerSelect
                 onValueChange={(value: string | null, _index: number) => {
                   handleDay(value)
                   clearError('dayType');
@@ -798,7 +860,90 @@ export const LeaveScreen: React.FC = () => {
                 }}
                 useNativeAndroidPickerStyle={false}
                 disabled={!selectedLeaveType}
-              />
+              /> */}
+              {Platform.OS === 'ios' ? (
+                // ------------ iOS: custom input + dropdown ------------
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.leaveInputWrapper,
+                      {
+                        height: 42,
+                        backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (!selectedLeaveType) return; // respect disabled
+                      setIsDayTypeOpen(prev => !prev);
+                    }}
+                    disabled={!selectedLeaveType}
+                  >
+                    <Text
+                      style={
+                        dayType
+                          ? styles.leaveValueText
+                          : styles.leavePlaceholderText
+                      }
+                    >
+                      {dayType
+                        ? selectedDayTypeLabel
+                        : 'Select Day Type'}
+                    </Text>
+
+                    <Text style={styles.leaveArrow}>▾</Text>
+                  </TouchableOpacity>
+
+                  {isDayTypeOpen && (
+                    <View style={styles.leaveDropdown}>
+                      <ScrollView style={{ maxHeight: 200 }}>
+                        {dayTypeItems.map(item => (
+                          <TouchableOpacity
+                            key={item.value}
+                            style={styles.leaveOption}
+                            onPress={() => {
+                              setIsDayTypeOpen(false);
+                              handleDay(item.value);      // same handler
+                              clearError('dayType');
+                            }}
+                          >
+                            <Text style={styles.leaveOptionText}>{item.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // ------------ Android: keep RNPickerSelect ------------
+                <RNPickerSelect
+                  onValueChange={(value) => {
+                    handleDay(value);
+                    clearError('dayType');
+                  }}
+                  items={dayTypeItems}
+                  placeholder={{ label: 'Select Day Type', value: '' }}
+                  value={dayType}
+                  style={{
+                    ...pickerSelectStyles,
+                    inputAndroid: {
+                      ...pickerSelectStyles.inputAndroid,
+                      backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                    },
+                    inputIOS: {
+                      ...pickerSelectStyles.inputIOS,
+                      backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                    },
+                    placeholder: {
+                      ...pickerSelectStyles.placeholder,
+                      color: !selectedLeaveType ? '#bbb' : '#000',
+                    },
+                  }}
+                  useNativeAndroidPickerStyle={false}
+                  disabled={!selectedLeaveType}
+                />
+              )}
+
               {formErrors.dayType && (
                 <Text style={styles.errorText}>{formErrors.dayType}</Text>
               )}
