@@ -40,7 +40,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 
   // 👇 Single state object for form
   const [form, setForm] = useState({
-    attendanceDay: null,
+    attendanceDay: new Date(),
     selectedName: '',
     requestTo: '',
     requestFor: '',
@@ -122,7 +122,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
   // 🔹 Reset all
   const resetAllState = useCallback(() => {
     setForm({
-      attendanceDay: null,
+      attendanceDay: new Date(),
       requestTo: '',
       selectedName: '',
       requestFor: '',
@@ -353,7 +353,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
                           style={styles.leaveOption}
                           onPress={() => {
                             setIsSelectedNameOpen(false);
-                            updateForm('selectedName', item.value);
+                            updateForm('requestTo', item.value);
                           }}
                         >
                           <Text style={styles.leaveOptionText}>{item.label}</Text>
@@ -367,10 +367,10 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
               // ---------------- Android: RNPickerSelect ----------------
               <RNPickerSelect
                 onValueChange={(value) => {
-                  updateForm('selectedName', value);
+                  updateForm('requestTo', value);
                 }}
                 items={renderUserOptions(userData, names)}
-                value={form.selectedName}
+                value={form.requestTo}
                 placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
                 style={{
                   ...pickerSelectStyles,
