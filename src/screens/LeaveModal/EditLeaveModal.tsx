@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Modal,
+  Platform,
 } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 import moment from 'moment';
@@ -19,6 +20,7 @@ import { updateLeave, getLeaveUser } from '@/redux/slices/leaveSlice';
 import { Upload } from 'lucide-react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { styles, pickerSelectStyles } from '@/styles/leaveStyles';
+import { Snackbar } from 'react-native-paper';
 
 interface Props {
   visible: boolean;
@@ -56,6 +58,10 @@ const EditLeaveModal: React.FC<Props> = ({
   const [clubing, setClubing] = useState('');
   const [isClubChecked, setIsClubChecked] = useState(false);
   const [selectedName, setSelectedName] = useState('');
+  const [snackbar, setSnackbar] = useState({
+    visible: false,
+    message: '',
+  });
 
   // files
   const [fileList, setFileList] = useState<any[]>([]);
@@ -65,6 +71,11 @@ const EditLeaveModal: React.FC<Props> = ({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [activePicker, setActivePicker] = useState<string | null>(null);
   const [errorText, setErrorText] = useState('');
+  const [isLeaveTypeOpen, setIsLeaveTypeOpen] = useState(false);
+  const [isReasonOpen, setIsReasonOpen] = useState(false);
+  const [isDayTypeOpen, setIsDayTypeOpen] = useState(false);
+  const [isNameOpen, setIsNameOpen] = useState(false);
+  const [isClubingOpen, setIsClubingOpen] = useState(false);
 
   // pre-fill on open
   useEffect(() => {
@@ -168,7 +179,14 @@ const EditLeaveModal: React.FC<Props> = ({
           dispatch(getLeaveUser({ leave_id: leaveData?.id }));
           onClose();
         })
-        .catch(err => console.error('Update failed', err));
+        .catch(err => {
+          setSnackbar({
+            visible: true,
+            message: err || 'Something went wrong',
+          });
+          console.error('Update failed', err)
+        }
+        );
     }
   };
 
@@ -236,14 +254,76 @@ const EditLeaveModal: React.FC<Props> = ({
           {/* Leave Type */}
           <View style={styles.leaveContainer}>
             <Text style={styles.label}>Leave Type <Text style={{ color: 'red' }}>*</Text></Text>
-            <RNPickerSelect
-              onValueChange={setSelectedLeaveType}
-              items={leaveListOptions.map(lt => ({ label: lt, value: lt }))}
-              placeholder={{ label: 'Select Leave Type', value: '' }}
-              value={selectedLeaveType}
-              style={pickerSelectStyles}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsLeaveTypeOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      selectedLeaveType
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                  >
+                    {selectedLeaveType || 'Select Leave Type'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isLeaveTypeOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 200 }}>
+                      {leaveListOptions.map(lt => (
+                        <TouchableOpacity
+                          key={lt}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsLeaveTypeOpen(false);
+                            setSelectedLeaveType(lt);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{lt}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(val) => {
+                  setSelectedLeaveType(val);
+                }}
+                items={leaveListOptions.map(lt => ({ label: lt, value: lt }))}
+                placeholder={{ label: 'Select Leave Type', value: '' }}
+                value={selectedLeaveType}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
             {formErrors.leaveType && (
               <Text style={styles.errorText}>{formErrors.leaveType}</Text>
             )}
@@ -252,19 +332,93 @@ const EditLeaveModal: React.FC<Props> = ({
           {/* Leave Duration */}
           <View style={styles.leaveContainer}>
             <Text style={styles.label}>Leave Duration <Text style={{ color: 'red' }}>*</Text></Text>
-            <RNPickerSelect
-              onValueChange={setDayType}
-              items={[
-                { label: 'Short Day Leave', value: 'short' },
-                { label: 'Half Day Leave', value: 'half' },
-                { label: 'Single Day Leave', value: 'single' },
-                { label: 'Multiple Day Leave', value: 'multiple' },
-              ]}
-              placeholder={{ label: 'Select Day Type', value: '' }}
-              value={dayType}
-              style={pickerSelectStyles}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsDayTypeOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      dayType
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                  >
+                    {dayType
+                      ? {
+                        short: 'Short Day Leave',
+                        half: 'Half Day Leave',
+                        single: 'Single Day Leave',
+                        multiple: 'Multiple Day Leave',
+                      }[dayType]
+                      : 'Select Day Type'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isDayTypeOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 220 }}>
+                      {[
+                        { label: 'Short Day Leave', value: 'short' },
+                        { label: 'Half Day Leave', value: 'half' },
+                        { label: 'Single Day Leave', value: 'single' },
+                        { label: 'Multiple Day Leave', value: 'multiple' },
+                      ].map(item => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsDayTypeOpen(false);
+                            setDayType(item.value);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(val) => {
+                  setDayType(val);
+                }}
+                items={[
+                  { label: 'Short Day Leave', value: 'short' },
+                  { label: 'Half Day Leave', value: 'half' },
+                  { label: 'Single Day Leave', value: 'single' },
+                  { label: 'Multiple Day Leave', value: 'multiple' },
+                ]}
+                placeholder={{ label: 'Select Day Type', value: '' }}
+                value={dayType}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
             {formErrors.dayType && (
               <Text style={styles.errorText}>{formErrors.dayType}</Text>
             )}
@@ -343,17 +497,81 @@ const EditLeaveModal: React.FC<Props> = ({
                 onChangeText={setOtherReason}
               />
             ) : (
-              <RNPickerSelect
-                onValueChange={handleReasonChange}
-                items={[
-                  ...(reasonList ?? []).map(r => ({ label: r, value: r })),
-                  { label: 'Other', value: 'other' },
-                ]}
-                placeholder={{ label: 'Select Reason', value: '' }}
-                value={reason}
-                style={pickerSelectStyles}
-                useNativeAndroidPickerStyle={false}
-              />
+              Platform.OS === 'ios' ? (
+                // ---------------- iOS: Custom Dropdown ----------------
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.leaveInputWrapper,
+                      {
+                        height: 42,
+                        backgroundColor: 'white',
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => setIsReasonOpen(prev => !prev)}
+                  >
+                    <Text
+                      style={
+                        reason
+                          ? styles.leaveValueText
+                          : styles.leavePlaceholderText
+                      }
+                    >
+                      {reason || 'Select Reason'}
+                    </Text>
+
+                    <Text style={styles.leaveArrow}>▾</Text>
+                  </TouchableOpacity>
+
+                  {isReasonOpen && (
+                    <View style={styles.leaveDropdown}>
+                      <ScrollView style={{ maxHeight: 250 }}>
+                        {[
+                          ...(reasonList ?? []).map(r => ({ label: r, value: r })),
+                          { label: 'Other', value: 'other' },
+                        ].map(item => (
+                          <TouchableOpacity
+                            key={item.value}
+                            style={styles.leaveOption}
+                            onPress={() => {
+                              setIsReasonOpen(false);
+                              handleReasonChange(item.value);
+                            }}
+                          >
+                            <Text style={styles.leaveOptionText}>{item.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // ---------------- Android: RNPickerSelect ----------------
+                <RNPickerSelect
+                  onValueChange={(val) => {
+                    handleReasonChange(val);
+                  }}
+                  items={[
+                    ...(reasonList ?? []).map(r => ({ label: r, value: r })),
+                    { label: 'Other', value: 'other' },
+                  ]}
+                  placeholder={{ label: 'Select Reason', value: '' }}
+                  value={reason}
+                  style={{
+                    ...pickerSelectStyles,
+                    inputAndroid: {
+                      ...pickerSelectStyles.inputAndroid,
+                      backgroundColor: 'white',
+                    },
+                    placeholder: {
+                      ...pickerSelectStyles.placeholder,
+                      color: '#777',
+                    },
+                  }}
+                  useNativeAndroidPickerStyle={false}
+                />
+              )
             )}
           </View>
 
@@ -400,28 +618,156 @@ const EditLeaveModal: React.FC<Props> = ({
               </TouchableOpacity>
             </View>
             {isClubChecked && (
-              <RNPickerSelect
-                onValueChange={setClubing}
-                items={leaveListOptions.map(lt => ({ label: lt, value: lt }))}
-                value={clubing}
-                placeholder={{ label: 'Select Club Leave Type', value: '' }}
-                style={pickerSelectStyles}
-                useNativeAndroidPickerStyle={false}
-              />
+              Platform.OS === 'ios' ? (
+                // ---------------- iOS: Custom Dropdown ----------------
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.leaveInputWrapper,
+                      {
+                        height: 42,
+                        backgroundColor: 'white',
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => setIsClubingOpen(prev => !prev)}
+                  >
+                    <Text
+                      style={
+                        clubing
+                          ? styles.leaveValueText
+                          : styles.leavePlaceholderText
+                      }
+                    >
+                      {clubing || 'Select Club Leave Type'}
+                    </Text>
+
+                    <Text style={styles.leaveArrow}>▾</Text>
+                  </TouchableOpacity>
+
+                  {isClubingOpen && (
+                    <View style={styles.leaveDropdown}>
+                      <ScrollView style={{ maxHeight: 220 }}>
+                        {leaveListOptions.map(item => (
+                          <TouchableOpacity
+                            key={item}
+                            style={styles.leaveOption}
+                            onPress={() => {
+                              setIsClubingOpen(false);
+                              setClubing(item);
+                            }}
+                          >
+                            <Text style={styles.leaveOptionText}>{item}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // ---------------- Android: RNPickerSelect ----------------
+                <RNPickerSelect
+                  onValueChange={(val) => {
+                    setClubing(val);
+                  }}
+                  items={leaveListOptions.map(lt => ({ label: lt, value: lt }))}
+                  value={clubing}
+                  placeholder={{ label: 'Select Club Leave Type', value: '' }}
+                  style={{
+                    ...pickerSelectStyles,
+                    inputAndroid: {
+                      ...pickerSelectStyles.inputAndroid,
+                      backgroundColor: 'white',
+                    },
+                    placeholder: {
+                      ...pickerSelectStyles.placeholder,
+                      color: '#777',
+                    },
+                  }}
+                  useNativeAndroidPickerStyle={false}
+                />
+              )
+
             )}
           </View>
 
           {/* Request To */}
           <View style={styles.leaveContainer}>
             <Text style={styles.label}>Request To <Text style={{ color: 'red' }}>*</Text></Text>
-            <RNPickerSelect
-              onValueChange={setSelectedName}
-              items={renderUserOptions(userData, names)}
-              value={selectedName}
-              placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
-              style={pickerSelectStyles}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsNameOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      selectedName
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                  >
+                    {selectedName
+                      ? renderUserOptions(userData, names).find(
+                        opt => opt.value === selectedName
+                      )?.label
+                      : 'Select Reporting Manager/HR'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isNameOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 250 }}>
+                      {renderUserOptions(userData, names).map(item => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsNameOpen(false);
+                            setSelectedName(item.value);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(val) => {
+                  setSelectedName(val);
+                }}
+                items={renderUserOptions(userData, names)}
+                value={selectedName}
+                placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
           </View>
 
           {/* Upload */}
@@ -466,6 +812,19 @@ const EditLeaveModal: React.FC<Props> = ({
           <Text style={styles.submitText}>Update Leave</Text>
         </TouchableOpacity>
       </View>
+
+      <Snackbar
+        visible={snackbar.visible}
+        onDismiss={() => setSnackbar({ ...snackbar, visible: false })}
+        duration={3000}
+        style={{
+          backgroundColor: '#E53935',
+          borderRadius: 8,
+          top: -100,
+        }}
+      >
+        {snackbar.message}
+      </Snackbar>
     </AppModal>
   );
 };

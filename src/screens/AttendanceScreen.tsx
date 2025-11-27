@@ -352,9 +352,11 @@ export const AttendanceScreen: React.FC = () => {
               }}
               dayComponent={({ date, state }) => {
                 if (!date) return null;
+
                 const dateStr = date.dateString;
                 const today = moment().format('YYYY-MM-DD');
-                const selected = currentDate || today;
+                const isFuture = moment(dateStr).isAfter(today);
+                const selected = currentDate;
 
                 // find record for this date
                 const record = monthlyRecords.find(
@@ -365,43 +367,41 @@ export const AttendanceScreen: React.FC = () => {
                 let label = '';
                 let labelColor = '#9E9E9E';
 
-                if (record?.holiday) {
-                  label = 'HD';
-                  labelColor = statusColors.Holiday;
-                } else if (record?.status === 'Absent') {
-                  label = 'AB';
-                  labelColor = statusColors.Absent;
-                } else if (record?.status === 'Present') {
-                  label = 'P';
-                  labelColor = statusColors.Present;
-                } else if (record?.status === 'Leave') {
-                  label = 'L';
-                  labelColor = statusColors.Leave;
-                } else if (record?.status === 'Sick Leave') {
-                  label = 'SL';
-                  labelColor = statusColors.Sick;
+                if (!isFuture) {
+                  if (record?.holiday) {
+                    label = 'HD';
+                    labelColor = statusColors.Holiday;
+                  } else if (record?.status === 'Absent') {
+                    label = 'AB';
+                    labelColor = statusColors.Absent;
+                  } else if (record?.status === 'Present') {
+                    label = 'P';
+                    labelColor = statusColors.Present;
+                  } else if (record?.status === 'Leave') {
+                    label = 'L';
+                    labelColor = statusColors.Leave;
+                  } else if (record?.status === 'Sick Leave') {
+                    label = 'SL';
+                    labelColor = statusColors.Sick;
+                  }
                 }
 
-                const isSelected = dateStr === selected;
+                const isSelected = !isFuture && dateStr === selected;
 
                 return (
                   <TouchableOpacity
+                    disabled={isFuture} // 🔥 disable tap
                     style={{
                       alignItems: 'center',
                       justifyContent: 'center',
                       width: 40,
                       height: 50,
+                      opacity: isFuture ? 0.35 : 1, // 🔥 make future light
                     }}
                     onPress={() => {
-                      const today = moment().format('YYYY-MM-DD');
-                      const isFuture = moment(dateStr).isAfter(today);
-
                       if (!isFuture) {
                         setCurrentDate(dateStr);
                         handleFetchDetailByDate(dateStr);
-                      } else {
-                        // Optional: you can still highlight the future date
-                        setCurrentDate(dateStr);
                       }
                     }}
                   >
@@ -418,11 +418,13 @@ export const AttendanceScreen: React.FC = () => {
                     >
                       <Text
                         style={{
-                          color: isSelected
-                            ? '#fff'
-                            : state === 'disabled'
-                            ? '#d9d9d9'
-                            : '#000',
+                          color: isFuture
+                            ? '#bdbdbd' // 🔥 gray future day text
+                            : isSelected
+                              ? '#fff'
+                              : state === 'disabled'
+                                ? '#d9d9d9'
+                                : '#000',
                           fontWeight: isSelected ? '700' : '500',
                         }}
                       >
@@ -430,25 +432,20 @@ export const AttendanceScreen: React.FC = () => {
                       </Text>
                     </View>
 
-                    {/* Status label */}
-                    {label ? (
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 'bold',
-                          color: labelColor,
-                        }}
-                      >
-                        {label}
-                      </Text>
-                    ) : (
-                      <Text
-                        style={{ fontSize: 10, color: 'transparent' }}
-                      ></Text>
-                    )}
+                    {/* Status Label */}
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 'bold',
+                        color: isFuture ? 'transparent' : labelColor, // 🔥 no label for future days
+                      }}
+                    >
+                      {isFuture ? '' : label}
+                    </Text>
                   </TouchableOpacity>
                 );
               }}
+
               theme={{
                 todayTextColor: '#2196F3',
                 arrowColor: '#2196F3',

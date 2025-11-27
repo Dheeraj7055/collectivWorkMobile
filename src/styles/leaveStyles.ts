@@ -443,7 +443,7 @@ export const styles = StyleSheet.create({
 
 export const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
-    height: 42,
+    height: 40,
     fontSize: 14,
     paddingHorizontal: 10,
     borderWidth: 1,
