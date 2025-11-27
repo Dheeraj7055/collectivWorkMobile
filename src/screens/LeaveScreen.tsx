@@ -151,6 +151,10 @@ export const LeaveScreen: React.FC = () => {
   );
   const [isLeaveTypeOpen, setIsLeaveTypeOpen] = useState(false);
   const [isDayTypeOpen, setIsDayTypeOpen] = useState(false);
+  const [isEndHalfOpen, setIsEndHalfOpen] = useState(false);
+  const [isStartHalfOpen, setIsStartHalfOpen] = useState(false);
+  const [isNameOpen, setIsNameOpen] = useState(false);
+  const [isReasonOpen, setIsReasonOpen] = useState(false);
 
   // Leave Duration Config
   const [allowedShortHalfday, setAllowedShortHalfday] = useState<{
@@ -189,18 +193,18 @@ export const LeaveScreen: React.FC = () => {
   );
 
   const dayTypeItems = [
-  ...(allowedShortHalfday?.allow_short_leave
-    ? [{ label: 'Short Day Leave', value: 'short' as const }]
-    : []),
-  ...(allowedShortHalfday?.allow_half_day_leave
-    ? [{ label: 'Half Day Leave', value: 'half' as const }]
-    : []),
-  { label: 'Single Day Leave', value: 'single' as const },
-  { label: 'Multiple Day Leave', value: 'multiple' as const },
-];
+    ...(allowedShortHalfday?.allow_short_leave
+      ? [{ label: 'Short Day Leave', value: 'short' as const }]
+      : []),
+    ...(allowedShortHalfday?.allow_half_day_leave
+      ? [{ label: 'Half Day Leave', value: 'half' as const }]
+      : []),
+    { label: 'Single Day Leave', value: 'single' as const },
+    { label: 'Multiple Day Leave', value: 'multiple' as const },
+  ];
 
-const selectedDayTypeLabel =
-  dayTypeItems.find(item => item.value === dayType)?.label || '';
+  const selectedDayTypeLabel =
+    dayTypeItems.find(item => item.value === dayType)?.label || '';
 
   const getLeaveDurationLabel = (no_of_days: number) => {
     if (no_of_days === 1) return 'Single Day';
@@ -262,7 +266,7 @@ const selectedDayTypeLabel =
         setClubLeaveAllowed(
           leave?.apply_rules
             ? leave?.apply_rules?.leave_application_restrictions?.club_leave
-                ?.allowed === 'no'
+              ?.allowed === 'no'
               ? false
               : true
             : false,
@@ -299,9 +303,9 @@ const selectedDayTypeLabel =
       const updatedLeaveType = leaveTypeData
         ? leaveTypeData
         : {
-            allow_half_day_leave: false,
-            allow_short_leave: false,
-          };
+          allow_half_day_leave: false,
+          allow_short_leave: false,
+        };
 
       const leaveQuotaDay = userLeaveQuotaList?.leave_config?.find(
         (it: any) => it?.leave_type.toLowerCase() === value.toLowerCase(),
@@ -328,12 +332,13 @@ const selectedDayTypeLabel =
         }}
       >
         <Text style={{ color: value ? '#000' : '#888' }}>
-          {value ? value.toLocaleDateString() : label}
+          {value ? moment(value).format("DD/MM/YYYY") : label}
         </Text>
       </TouchableOpacity>
     ),
-    [],
+    [clearError]  
   );
+
 
   const handleDay = (value: string | null) => {
     if (!value) return;
@@ -501,15 +506,15 @@ const selectedDayTypeLabel =
     if (type === 'single' || type === 'halfShort') {
       setStartDate(date);
       clearError('startDate')
-    } 
+    }
     if (type === 'multiStart') {
-        setStartDate(date);
-        clearError('startDate');
-    } 
+      setStartDate(date);
+      clearError('startDate');
+    }
     if (type === 'multiEnd') {
       setEndDate(date);
       clearError('endDate');
-    } 
+    }
   };
 
   const handleSubmit = () => {
@@ -1003,20 +1008,93 @@ const selectedDayTypeLabel =
                     <Text style={styles.label}>
                       Select Half <Text style={{ color: 'red' }}>*</Text>
                     </Text>
-                    <RNPickerSelect
-                      onValueChange={val => {
-                        setStartHalf(val);
-                        clearError('startHalf');
-                      }}
-                      items={[
-                        { label: 'First Half', value: 'first_half' },
-                        { label: 'Second Half', value: 'second_half' },
-                      ]}
-                      value={startHalf}
-                      style={pickerSelectStyles}
-                      useNativeAndroidPickerStyle={false}
-                      placeholder={{ label: 'Choose...', value: '' }}
-                    />
+                    {Platform.OS === 'ios' ? (
+                      // ------------ iOS: custom dropdown ------------
+                      <View style={{ position: 'relative' }}>
+                        <TouchableOpacity
+                          style={[
+                            styles.leaveInputWrapper,
+                            {
+                              height: 42,
+                              backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                            },
+                          ]}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            if (!selectedLeaveType) return;
+                            setIsStartHalfOpen(prev => !prev);
+                          }}
+                          disabled={!selectedLeaveType}
+                        >
+                          <Text
+                            style={
+                              startHalf
+                                ? styles.leaveValueText
+                                : styles.leavePlaceholderText
+                            }
+                          >
+                            {startHalf
+                              ? startHalf === 'first_half'
+                                ? 'First Half'
+                                : 'Second Half'
+                              : 'Choose...'}
+                          </Text>
+
+                          <Text style={styles.leaveArrow}>▾</Text>
+                        </TouchableOpacity>
+
+                        {isStartHalfOpen && (
+                          <View style={styles.leaveDropdown}>
+                            <ScrollView style={{ maxHeight: 200 }}>
+                              {[
+                                { label: 'First Half', value: 'first_half' },
+                                { label: 'Second Half', value: 'second_half' },
+                              ].map(item => (
+                                <TouchableOpacity
+                                  key={item.value}
+                                  style={styles.leaveOption}
+                                  onPress={() => {
+                                    setIsStartHalfOpen(false);
+                                    setStartHalf(item.value);
+                                    clearError('startHalf');
+                                  }}
+                                >
+                                  <Text style={styles.leaveOptionText}>{item.label}</Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          </View>
+                        )}
+                      </View>
+                    ) : (
+                      // ------------ Android: RNPickerSelect ------------
+                      <RNPickerSelect
+                        onValueChange={val => {
+                          setStartHalf(val);
+                          clearError('startHalf');
+                        }}
+                        items={[
+                          { label: 'First Half', value: 'first_half' },
+                          { label: 'Second Half', value: 'second_half' },
+                        ]}
+                        value={startHalf}
+                        style={{
+                          ...pickerSelectStyles,
+                          inputAndroid: {
+                            ...pickerSelectStyles.inputAndroid,
+                            backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                          },
+                          placeholder: {
+                            ...pickerSelectStyles.placeholder,
+                            color: !selectedLeaveType ? '#bbb' : '#000',
+                          },
+                        }}
+                        placeholder={{ label: 'Choose...', value: '' }}
+                        useNativeAndroidPickerStyle={false}
+                        disabled={!selectedLeaveType}
+                      />
+                    )}
+
                     {formErrors.startHalf && (
                       <Text style={styles.errorText}>
                         {formErrors.startHalf}
@@ -1045,20 +1123,93 @@ const selectedDayTypeLabel =
                     <Text style={styles.label}>
                       Select Half <Text style={{ color: 'red' }}>*</Text>
                     </Text>
-                    <RNPickerSelect
-                      onValueChange={val => {
-                        setEndHalf(val);
-                        clearError('endHalf');
-                      }}
-                      items={[
-                        { label: 'First Half', value: 'first_half' },
-                        { label: 'Second Half', value: 'second_half' },
-                      ]}
-                      value={endHalf}
-                      style={pickerSelectStyles}
-                      useNativeAndroidPickerStyle={false}
-                      placeholder={{ label: 'Choose...', value: '' }}
-                    />
+                    {Platform.OS === 'ios' ? (
+                      // ------------ iOS: custom input + dropdown ------------
+                      <View style={{ position: 'relative' }}>
+                        <TouchableOpacity
+                          style={[
+                            styles.leaveInputWrapper,
+                            {
+                              height: 42,
+                              backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                            },
+                          ]}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            if (!selectedLeaveType) return;
+                            setIsEndHalfOpen(prev => !prev);
+                          }}
+                          disabled={!selectedLeaveType}
+                        >
+                          <Text
+                            style={
+                              endHalf
+                                ? styles.leaveValueText
+                                : styles.leavePlaceholderText
+                            }
+                          >
+                            {endHalf
+                              ? endHalf === 'first_half'
+                                ? 'First Half'
+                                : 'Second Half'
+                              : 'Choose...'}
+                          </Text>
+
+                          <Text style={styles.leaveArrow}>▾</Text>
+                        </TouchableOpacity>
+
+                        {isEndHalfOpen && (
+                          <View style={styles.leaveDropdown}>
+                            <ScrollView style={{ maxHeight: 200 }}>
+                              {[
+                                { label: 'First Half', value: 'first_half' },
+                                { label: 'Second Half', value: 'second_half' },
+                              ].map(item => (
+                                <TouchableOpacity
+                                  key={item.value}
+                                  style={styles.leaveOption}
+                                  onPress={() => {
+                                    setIsEndHalfOpen(false);
+                                    setEndHalf(item.value);
+                                    clearError('endHalf');
+                                  }}
+                                >
+                                  <Text style={styles.leaveOptionText}>{item.label}</Text>
+                                </TouchableOpacity>
+                              ))}
+                            </ScrollView>
+                          </View>
+                        )}
+                      </View>
+                    ) : (
+                      // ------------ Android: keep RNPickerSelect ------------
+                      <RNPickerSelect
+                        onValueChange={val => {
+                          setEndHalf(val);
+                          clearError('endHalf');
+                        }}
+                        items={[
+                          { label: 'First Half', value: 'first_half' },
+                          { label: 'Second Half', value: 'second_half' },
+                        ]}
+                        value={endHalf}
+                        style={{
+                          ...pickerSelectStyles,
+                          inputAndroid: {
+                            ...pickerSelectStyles.inputAndroid,
+                            backgroundColor: !selectedLeaveType ? '#aaaaaa2e' : 'white',
+                          },
+                          placeholder: {
+                            ...pickerSelectStyles.placeholder,
+                            color: !selectedLeaveType ? '#bbb' : '#000',
+                          },
+                        }}
+                        placeholder={{ label: 'Choose...', value: '' }}
+                        useNativeAndroidPickerStyle={false}
+                        disabled={!selectedLeaveType}
+                      />
+                    )}
+
                     {formErrors.endHalf && (
                       <Text style={styles.errorText}>{formErrors.endHalf}</Text>
                     )}
@@ -1165,20 +1316,86 @@ const selectedDayTypeLabel =
                 Request To <Text style={{ color: 'red' }}>*</Text>
               </Text>
 
-              <RNPickerSelect
-                onValueChange={val => {
-                  setSelectedName(val);
-                  clearError('requestTo');
-                }}
-                items={renderUserOptions(userData, names)}
-                value={selectedName}
-                placeholder={{
-                  label: 'Select Reporting Manager/HR',
-                  value: '',
-                }}
-                style={pickerSelectStyles}
-                useNativeAndroidPickerStyle={false}
-              />
+              {Platform.OS === 'ios' ? (
+                // ------------ iOS: custom dropdown ------------
+                <View style={{ position: 'relative' }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.leaveInputWrapper,
+                      {
+                        height: 42,
+                        backgroundColor: 'white',
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      setIsNameOpen(prev => !prev);
+                    }}
+                  >
+                    <Text
+                      style={
+                        selectedName
+                          ? styles.leaveValueText
+                          : styles.leavePlaceholderText
+                      }
+                    >
+                      {selectedName
+                        ? renderUserOptions(userData, names).find(
+                          (item) => item.value === selectedName
+                        )?.label
+                        : 'Select Reporting Manager/HR'}
+                    </Text>
+
+                    <Text style={styles.leaveArrow}>▾</Text>
+                  </TouchableOpacity>
+
+                  {isNameOpen && (
+                    <View style={styles.leaveDropdown}>
+                      <ScrollView style={{ maxHeight: 250 }}>
+                        {renderUserOptions(userData, names).map(item => (
+                          <TouchableOpacity
+                            key={item.value}
+                            style={styles.leaveOption}
+                            onPress={() => {
+                              setIsNameOpen(false);
+                              setSelectedName(item.value);
+                              clearError('requestTo');
+                            }}
+                          >
+                            <Text style={styles.leaveOptionText}>{item.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // ------------ Android: RNPickerSelect ------------
+                <RNPickerSelect
+                  onValueChange={(val) => {
+                    setSelectedName(val);
+                    clearError('requestTo');
+                  }}
+                  items={renderUserOptions(userData, names)}
+                  value={selectedName}
+                  placeholder={{
+                    label: 'Select Reporting Manager/HR',
+                    value: '',
+                  }}
+                  style={{
+                    ...pickerSelectStyles,
+                    inputAndroid: {
+                      ...pickerSelectStyles.inputAndroid,
+                      backgroundColor: 'white',
+                    },
+                    placeholder: {
+                      ...pickerSelectStyles.placeholder,
+                      color: '#888',
+                    },
+                  }}
+                  useNativeAndroidPickerStyle={false}
+                />
+              )}
 
               {/* Error Handling */}
               {showErrors && !selectedName && (
@@ -1213,38 +1430,90 @@ const selectedDayTypeLabel =
                   </TouchableOpacity>
                 </View>
               ) : (
-                <RNPickerSelect
-                  onValueChange={handleReasonChange}
-                  items={[
-                    ...(reasonList?.map((r: string) => ({
-                      label: r,
-                      value: r,
-                    })) || []),
-                    { label: 'Other', value: 'other' },
-                  ]}
-                  placeholder={{ label: 'Select Reason', value: '' }}
-                  value={reason}
-                  // style={pickerSelectStyles}
-                  style={{
-                    ...pickerSelectStyles,
-                    inputAndroid: {
-                      ...pickerSelectStyles.inputAndroid,
-                      backgroundColor:
-                        reasonList?.length === 0 ? '#aaaaaa2e' : 'white',
-                    },
-                    inputIOS: {
-                      ...pickerSelectStyles.inputIOS,
-                      backgroundColor:
-                        reasonList?.length === 0 ? '#aaaaaa2e' : 'white',
-                    },
-                    placeholder: {
-                      ...pickerSelectStyles.placeholder,
-                      color: reasonList?.length === 0 ? '#bbb' : '#000',
-                    },
-                  }}
-                  useNativeAndroidPickerStyle={false}
-                  disabled={reasonList?.length === 0}
-                />
+                Platform.OS === 'ios' ? (
+                  // ---------------- iOS: custom dropdown ----------------
+                  <View style={{ position: 'relative' }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.leaveInputWrapper,
+                        {
+                          height: 42,
+                          backgroundColor:
+                            reasonList?.length === 0 ? '#aaaaaa2e' : 'white',
+                        },
+                      ]}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (reasonList?.length === 0) return;
+                        setIsReasonOpen(prev => !prev);
+                      }}
+                      disabled={reasonList?.length === 0}
+                    >
+                      <Text
+                        style={
+                          reason
+                            ? styles.leaveValueText
+                            : styles.leavePlaceholderText
+                        }
+                      >
+                        {reason || 'Select Reason'}
+                      </Text>
+
+                      <Text style={styles.leaveArrow}>▾</Text>
+                    </TouchableOpacity>
+
+                    {isReasonOpen && (
+                      <View style={styles.leaveDropdown}>
+                        <ScrollView style={{ maxHeight: 250 }}>
+                          {[
+                            ...(reasonList?.map(r => ({ label: r, value: r })) || []),
+                            { label: 'Other', value: 'other' },
+                          ].map(item => (
+                            <TouchableOpacity
+                              key={item.value}
+                              style={styles.leaveOption}
+                              onPress={() => {
+                                setIsReasonOpen(false);
+                                handleReasonChange(item.value);
+                                clearError('reason');
+                              }}
+                            >
+                              <Text style={styles.leaveOptionText}>{item.label}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  // ---------------- Android: RNPickerSelect ----------------
+                  <RNPickerSelect
+                    onValueChange={(val) => {
+                      handleReasonChange(val);
+                      clearError('reason');
+                    }}
+                    items={[
+                      ...(reasonList?.map(r => ({ label: r, value: r })) || []),
+                      { label: 'Other', value: 'other' },
+                    ]}
+                    placeholder={{ label: 'Select Reason', value: '' }}
+                    value={reason}
+                    style={{
+                      ...pickerSelectStyles,
+                      inputAndroid: {
+                        ...pickerSelectStyles.inputAndroid,
+                        backgroundColor:
+                          reasonList?.length === 0 ? '#aaaaaa2e' : 'white',
+                      },
+                      placeholder: {
+                        ...pickerSelectStyles.placeholder,
+                        color: reasonList?.length === 0 ? '#bbb' : '#000',
+                      },
+                    }}
+                    useNativeAndroidPickerStyle={false}
+                    disabled={reasonList?.length === 0}
+                  />
+                )
               )}
 
               {showErrors && !reason && !otherReason && (
@@ -1396,11 +1665,11 @@ const selectedDayTypeLabel =
               placeholder="Search"
               style={styles.searchInput}
               placeholderTextColor="#888"
-              // value={searchValue}
-              // onChangeText={text => {
-              //   setSearchValue(text);
-              //   handleSearch(text);
-              // }}
+            // value={searchValue}
+            // onChangeText={text => {
+            //   setSearchValue(text);
+            //   handleSearch(text);
+            // }}
             />
           </View>
 
@@ -1484,8 +1753,8 @@ const selectedDayTypeLabel =
                   {item.statusUpdatedBy
                     ? `${item.statusUpdatedBy.first_name} ${item.statusUpdatedBy.last_name}`
                     : item.userRequest
-                    ? `${item.userRequest.first_name} ${item.userRequest.last_name}`
-                    : '-'}
+                      ? `${item.userRequest.first_name} ${item.userRequest.last_name}`
+                      : '-'}
                 </Text>
               </View>
 
@@ -1518,8 +1787,8 @@ const selectedDayTypeLabel =
                         item.status === 'Approved'
                           ? 'green'
                           : item.status === 'Pending'
-                          ? 'orange'
-                          : 'red',
+                            ? 'orange'
+                            : 'red',
                     },
                   ]}
                 >

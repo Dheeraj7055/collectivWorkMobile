@@ -138,8 +138,7 @@ export const punchIn = createAsyncThunk<
 
     Toast.show({
       type: 'error',
-      text1: 'Error',
-      text2: message,
+      text1: message,
       position: 'top',      // or 'bottom'
       visibilityTime: 4000, // ms
     });

@@ -4,8 +4,28 @@ import { PaperProvider, Portal } from 'react-native-paper';
 import { store } from './src/redux/store';
 import { RootNavigator } from './src/navigation';
 import { lightTheme } from './src/themes/colors';
-import Toast from 'react-native-toast-message';
+import Toast, { BaseToast } from 'react-native-toast-message';
 import NoInternetBar from '@/components/NoInternetBar';
+const toastConfig = {
+  error: (props) => (
+    <BaseToast
+      {...props}
+      style={{ borderLeftColor: 'red' }}
+      text1NumberOfLines={0}  // unlimited lines
+      text2NumberOfLines={0}  // unlimited lines
+      text1Style={{
+        fontSize: 14,
+        fontWeight: '500',
+        flexWrap: 'wrap',
+      }}
+      text2Style={{
+        fontSize: 13,
+        flexWrap: 'wrap',
+      }}
+    />
+
+  ),
+};
 
 const App: React.FC = () => {
   return (
@@ -14,7 +34,7 @@ const App: React.FC = () => {
         <Portal.Host>
           <NoInternetBar />
           <RootNavigator />
-          <Toast position="top" topOffset={70} visibilityTime={3000} />
+          <Toast position="top" topOffset={70} config={toastConfig} visibilityTime={3000} />
         </Portal.Host>
       </PaperProvider>
     </Provider>

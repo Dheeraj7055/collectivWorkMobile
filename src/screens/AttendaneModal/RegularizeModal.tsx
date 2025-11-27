@@ -18,6 +18,7 @@ import { attendanceService } from '@/services/attendanceService';
 import { encodeData } from '@/utils/cryptoHelpers';
 import Toast from 'react-native-toast-message';
 import { Snackbar } from 'react-native-paper';
+import moment from 'moment';
 
 interface RegularizeModalProps {
   visible: boolean;
@@ -39,7 +40,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 
   // 👇 Single state object for form
   const [form, setForm] = useState({
-    attendanceDay: new Date(),
+    attendanceDay: null,
     selectedName: '',
     requestTo: '',
     requestFor: '',
@@ -57,6 +58,10 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [isSelectedNameOpen, setIsSelectedNameOpen] = useState(false);
+  const [isRequestForOpen, setIsRequestForOpen] = useState(false);
+  const [isCaptureModeOpen, setIsCaptureModeOpen] = useState(false);
+  const [isReasonOpen, setIsReasonOpen] = useState(false);
 
   // 🔹 Build reasonList only when userData or requestFor changes
   const reasonList = useMemo(() => {
@@ -117,7 +122,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
   // 🔹 Reset all
   const resetAllState = useCallback(() => {
     setForm({
-      attendanceDay: new Date(),
+      attendanceDay: null,
       requestTo: '',
       selectedName: '',
       requestFor: '',
@@ -163,7 +168,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 
       const payload = encodeData({
         user_id: userData?.user_id,
-        request_date: form.attendanceDay,
+        request_date: form?.attendanceDay,
         check_in:
           form.requestFor === 'Punch-In' || form.requestFor === 'Both'
             ? form.timeIn.toISOString()
@@ -181,8 +186,8 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
           form.requestFor === 'Punch-Out'
             ? 'checkOut'
             : form.requestFor === 'Punch-In'
-            ? 'checkIn'
-            : 'both',
+              ? 'checkIn'
+              : 'both',
       });
 
       const res = await attendanceService.raiseAttendanceRequest({ payload });
@@ -194,16 +199,16 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         resetAllState();
         onClose();
       } else {
-          setSnackbar({
-            visible: true,
-            message: res.message || 'Failed to submit request',
-          });
-      }
-    } catch (err: any) {
         setSnackbar({
           visible: true,
-          message: err.message || 'Something went wrong',
+          message: res.message || 'Failed to submit request',
         });
+      }
+    } catch (err: any) {
+      setSnackbar({
+        visible: true,
+        message: err.message || 'Something went wrong',
+      });
     } finally {
       setLoading(false);
     }
@@ -255,7 +260,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
   return (
     <>
       <AppModal visible={visible} onClose={onClose}>
-        
+
         <ScrollView style={{ maxHeight: 600 }} showsVerticalScrollIndicator>
           <View style={styles.iconGeneralCircle}>
             <Edit2 size="20" color="#0E79B6" />
@@ -278,14 +283,18 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
                 updateForm('attendanceDay', form.attendanceDay);
               }}
             >
-              <Text>{form.attendanceDay.toLocaleDateString('en-GB')}</Text>
+              <Text>
+                {form?.attendanceDay
+                  ? moment(form.attendanceDay).format('DD/MMM/YYYY')
+                  : 'Select Date'}
+              </Text>
             </TouchableOpacity>
             {formErrors.attendanceDay && (
               <Text style={styles.errorText}>{formErrors.attendanceDay}</Text>
             )}
             {showDatePicker && (
               <DateTimePicker
-                value={form.attendanceDay}
+                value={form?.attendanceDay ? new Date(form.attendanceDay) : new Date()}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={(event, selectedDate) => {
@@ -301,14 +310,83 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             <Text>
               Request To <Text style={{ color: 'red' }}>*</Text>
             </Text>
-            <RNPickerSelect
-              onValueChange={value => updateForm('selectedName', value)}
-              items={renderUserOptions(userData, names)}
-              value={form.selectedName}
-              placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
-              style={pickerSelectStyles}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                      marginTop: 6
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsSelectedNameOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      form.selectedName
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {form.selectedName
+                      ? renderUserOptions(userData, names).find(
+                        item => item.value === form.selectedName
+                      )?.label
+                      : 'Select Reporting Manager/HR'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isSelectedNameOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 250 }}>
+                      {renderUserOptions(userData, names).map(item => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsSelectedNameOpen(false);
+                            updateForm('selectedName', item.value);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(value) => {
+                  updateForm('selectedName', value);
+                }}
+                items={renderUserOptions(userData, names)}
+                value={form.selectedName}
+                placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
             {formErrors.selectedName && (
               <Text style={styles.errorText}>{formErrors.selectedName}</Text>
             )}
@@ -319,17 +397,85 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             <Text>
               Request For <Text style={{ color: 'red' }}>*</Text>
             </Text>
-            <RNPickerSelect
-              onValueChange={value => updateForm('requestFor', value)}
-              items={[
-                { label: 'Punch-In', value: 'Punch-In' },
-                { label: 'Punch-Out', value: 'Punch-Out' },
-                { label: 'Both', value: 'Both' },
-              ]}
-              style={pickerSelectStyles}
-              value={form.requestFor}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                      marginTop: 6
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsRequestForOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      form.requestFor
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                  >
+                    {form.requestFor || 'Select Request For'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isRequestForOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 200 }}>
+                      {[
+                        { label: 'Punch-In', value: 'Punch-In' },
+                        { label: 'Punch-Out', value: 'Punch-Out' },
+                        { label: 'Both', value: 'Both' },
+                      ].map(item => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsRequestForOpen(false);
+                            updateForm('requestFor', item.value);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(value) => {
+                  updateForm('requestFor', value);
+                }}
+                items={[
+                  { label: 'Punch-In', value: 'Punch-In' },
+                  { label: 'Punch-Out', value: 'Punch-Out' },
+                  { label: 'Both', value: 'Both' },
+                ]}
+                value={form.requestFor}
+                placeholder={{ label: 'Select Request For', value: '' }}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
             {formErrors.requestFor && (
               <Text style={styles.errorText}>{formErrors.requestFor}</Text>
             )}
@@ -340,16 +486,83 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             <Text>
               Capture Mode <Text style={{ color: 'red' }}>*</Text>
             </Text>
-            <RNPickerSelect
-              onValueChange={value => updateForm('captureMode', value)}
-              items={[
-                { label: 'Web', value: 'Web' },
-                { label: 'Remote', value: 'Remote' },
-              ]}
-              style={pickerSelectStyles}
-              value={form.captureMode}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                      marginTop: 6
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsCaptureModeOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      form.captureMode
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                  >
+                    {form.captureMode || 'Select Capture Mode'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isCaptureModeOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 200 }}>
+                      {[
+                        { label: 'Web', value: 'Web' },
+                        { label: 'Remote', value: 'Remote' },
+                      ].map(item => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsCaptureModeOpen(false);
+                            updateForm('captureMode', item.value);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(value) => {
+                  updateForm('captureMode', value);
+                }}
+                items={[
+                  { label: 'Web', value: 'Web' },
+                  { label: 'Remote', value: 'Remote' },
+                ]}
+                value={form.captureMode}
+                placeholder={{ label: 'Select Capture Mode', value: '' }}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
             {formErrors.captureMode && (
               <Text style={styles.errorText}>{formErrors.captureMode}</Text>
             )}
@@ -430,14 +643,79 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             <Text>
               Reason <Text style={{ color: 'red' }}>*</Text>
             </Text>
-            <RNPickerSelect
-              onValueChange={value => updateForm('reason', value)}
-              items={reasonList}
-              value={form.reason}
-              style={pickerSelectStyles}
-              placeholder={{ label: 'Select Reason', value: null }}
-              useNativeAndroidPickerStyle={false}
-            />
+            {Platform.OS === 'ios' ? (
+              // ---------------- iOS: Custom Dropdown ----------------
+              <View style={{ position: 'relative' }}>
+                <TouchableOpacity
+                  style={[
+                    styles.leaveInputWrapper,
+                    {
+                      height: 42,
+                      backgroundColor: 'white',
+                      marginTop: 6
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setIsReasonOpen(prev => !prev)}
+                >
+                  <Text
+                    style={
+                      form.reason
+                        ? styles.leaveValueText
+                        : styles.leavePlaceholderText
+                    }
+                  >
+                    {form.reason
+                      ? reasonList.find(r => r.value === form.reason)?.label
+                      : 'Select Reason'}
+                  </Text>
+
+                  <Text style={styles.leaveArrow}>▾</Text>
+                </TouchableOpacity>
+
+                {isReasonOpen && (
+                  <View style={styles.leaveDropdown}>
+                    <ScrollView style={{ maxHeight: 220 }}>
+                      {reasonList.map(item => (
+                        <TouchableOpacity
+                          key={item.value}
+                          style={styles.leaveOption}
+                          onPress={() => {
+                            setIsReasonOpen(false);
+                            updateForm('reason', item.value);
+                          }}
+                        >
+                          <Text style={styles.leaveOptionText}>{item.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            ) : (
+              // ---------------- Android: RNPickerSelect ----------------
+              <RNPickerSelect
+                onValueChange={(value) => {
+                  updateForm('reason', value);
+                }}
+                items={reasonList}
+                value={form.reason}
+                placeholder={{ label: 'Select Reason', value: null }}
+                style={{
+                  ...pickerSelectStyles,
+                  inputAndroid: {
+                    ...pickerSelectStyles.inputAndroid,
+                    backgroundColor: 'white',
+                  },
+                  placeholder: {
+                    ...pickerSelectStyles.placeholder,
+                    color: '#777',
+                  },
+                }}
+                useNativeAndroidPickerStyle={false}
+              />
+            )}
+
             {formErrors.reason && (
               <Text style={styles.errorText}>{formErrors.reason}</Text>
             )}
@@ -496,7 +774,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         >
           {snackbar.message}
         </Snackbar>
-      </AppModal>
+      </AppModal >
     </>
   );
 };
@@ -540,6 +818,60 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginTop: 6,
   },
+  leaveInputWrapper: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+  },
+
+  leavePlaceholderText: {
+    color: '#999',
+    fontSize: 14,
+  },
+
+  leaveValueText: {
+    color: '#000',
+    fontSize: 14,
+    display: 'flex',
+    flexWrap: 'nowrap',
+  },
+
+  leaveArrow: {
+    fontSize: 14,
+    color: '#555',
+  },
+
+  leaveDropdown: {
+    position: 'absolute',
+    top: 45,                // list BELOW the input
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    zIndex: 9999,          // ensure it floats above everything
+    elevation: 5,          // Android shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+
+  leaveOption: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+
+  leaveOptionText: {
+    fontSize: 14,
+    color: '#000',
+  },
 });
 
 const pickerSelectStyles = {
@@ -558,5 +890,8 @@ const pickerSelectStyles = {
     borderRadius: 6,
     marginTop: 6,
     // marginBottom: 12,
+  },
+  placeholder: {
+    color: '#888',
   },
 };
