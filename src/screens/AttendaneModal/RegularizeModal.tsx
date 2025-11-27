@@ -178,7 +178,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             ? form.timeOut.toISOString()
             : null,
         capture_mode: form.captureMode,
-        request_to: form.requestTo,
+        request_to: form.selectedName,
         reason: form.reason === 'Other' ? form.otherReason : form.reason,
         description: form.description,
         status_updated_by: form.requestTo,
@@ -353,7 +353,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
                           style={styles.leaveOption}
                           onPress={() => {
                             setIsSelectedNameOpen(false);
-                            updateForm('requestTo', item.value);
+                            updateForm('selectedName', item.value);
                           }}
                         >
                           <Text style={styles.leaveOptionText}>{item.label}</Text>
@@ -367,10 +367,10 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
               // ---------------- Android: RNPickerSelect ----------------
               <RNPickerSelect
                 onValueChange={(value) => {
-                  updateForm('requestTo', value);
+                  updateForm('selectedName', value);
                 }}
                 items={renderUserOptions(userData, names)}
-                value={form.requestTo}
+                value={form.selectedName}
                 placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
                 style={{
                   ...pickerSelectStyles,

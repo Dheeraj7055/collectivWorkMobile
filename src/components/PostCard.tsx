@@ -299,7 +299,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   };
 
   // Save edited comment
-  const handleSaveEdit = async (commentId: string | number) => {
+  const handleSaveEdit = async (commentId: string | number, comment: object) => {
     if (!editedText.trim()) return;
 
     const result = await dispatch(
@@ -309,9 +309,37 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
       }),
     );
 
+     if (result?.meta && commentId) {
+       setPostComments(prev =>
+         prev.map(item =>
+           item.id === commentId
+             ? {
+               ...item, // keep all original fields
+
+               comment: editedText,
+               updated_at: moment().toISOString(),
+
+               User: {
+                 ...item.User,
+                 id: userData.id,
+                 first_name: userData.first_name || '',
+                 last_name: userData.last_name || '',
+                 email: userData.email || '',
+                 image_url: userData.image_url || null,
+                 profile_color: userData.profile_color || '#ccc',
+                 designation: userData.designation || '',
+               },
+             }
+             : item
+         )
+       );
+
+      };
+
     if (updatePostComment.fulfilled.match(result)) {
       Toast.show({ type: 'success', text1: 'Comment updated' });
       setEditingCommentId(null);
+      dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
       setEditedText('');
     } else {
       Toast.show({ type: 'error', text1: 'Failed to update comment' });
@@ -1072,7 +1100,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                             !editedText.trim() && styles.disabledSendButton,
                           ]}
                           disabled={!editedText.trim()}
-                          onPress={() => handleSaveEdit(item.id)}
+                          onPress={() => handleSaveEdit(item.id, item)}
                         >
                           <Text style={styles.confirmText}>Save</Text>
                         </TouchableOpacity>
