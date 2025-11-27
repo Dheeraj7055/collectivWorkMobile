@@ -18,47 +18,49 @@ import { getInitials } from "@/common/CommonFunctions";
 import moment from "moment";
 import { RefreshableList } from "@/common/RefreshableList";
 
-const BookmarkRow = ({ announcement }: any) => {
+const BookmarkRow = ({ announcement,onPress  }: any) => {
   return (
-    <View style={styles.bookmarkRow}>
-      {announcement?.createdByUser?.image_url ? (
-        <Image
-          source={{ uri: announcement?.createdByUser?.image_url }}
-          style={styles.avatar}
-        />
-      ) : (
-        <View
-          style={[
-            styles.avatar,
-            {
-              backgroundColor:
-                announcement?.createdByUser?.profile_color || '#666',
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-          ]}
-        >
-          <Text style={styles.avatarText}>
-            {getInitials(announcement?.createdByUser)}
-          </Text>
-        </View>
-      )}
+    <TouchableOpacity onPress={() => onPress(announcement)}>
+      <View style={styles.bookmarkRow}>
+        {announcement?.createdByUser?.image_url ? (
+          <Image
+            source={{ uri: announcement?.createdByUser?.image_url }}
+            style={styles.avatar}
+          />
+        ) : (
+          <View
+            style={[
+              styles.avatar,
+              {
+                backgroundColor:
+                  announcement?.createdByUser?.profile_color || '#666',
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+            ]}
+          >
+            <Text style={styles.avatarText}>
+              {getInitials(announcement?.createdByUser)}
+            </Text>
+          </View>
+        )}
 
-      <View style={styles.bookmarkContent}>
-        <View>
-          <Text style={styles.subject}>{announcement?.subject}</Text>
-          <Text style={styles.description} numberOfLines={3}>
-            {announcement?.description}
-          </Text>
-        </View>
-        <View style={styles.bookmarkBlock}>
-          <Bookmark size="11" color="gray"></Bookmark>
-          <Text style={styles.bookMarkText}>
-            {moment(announcement?.created_at).format('DD/MM/YYYY | hh:mm A')}
-          </Text>
+        <View style={styles.bookmarkContent}>
+          <View>
+            <Text style={styles.subject}>{announcement?.subject}</Text>
+            <Text style={styles.description} numberOfLines={3}>
+              {announcement?.description}
+            </Text>
+          </View>
+          <View style={styles.bookmarkBlock}>
+            <Bookmark size="11" color="gray"></Bookmark>
+            <Text style={styles.bookMarkText}>
+              {moment(announcement?.created_at).format('DD/MM/YYYY | hh:mm A')}
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -76,6 +78,14 @@ export const BookmarkScreen = ({ navigation }: any) => {
 
   const reloadBookmarks = async () => {
     await dispatch(fetchBookmarks());
+  };
+
+  const goToPost = (a: any) => {
+    // you can pass either the whole object or just id
+    navigation.navigate('MainTabs', {
+      screen: 'PostDetail',
+      params: { postId: a.id }, // or { announcement: a }
+    });
   };
 
   return (
@@ -124,7 +134,7 @@ export const BookmarkScreen = ({ navigation }: any) => {
         <RefreshableList
           data={records}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => <BookmarkRow announcement={item} />}
+          renderItem={({ item }) => <BookmarkRow announcement={item} onPress={goToPost} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           onRefreshData={reloadBookmarks} // ✅ pull-to-refresh here
           ListEmptyComponent={

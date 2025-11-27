@@ -505,14 +505,14 @@ export const AttendanceScreen: React.FC = () => {
               </View>
             </View>
             {/* Actions */}
-            <View style={styles.rowBetweenBorder}>
-              {!selectedDay?.holiday  && <TouchableOpacity
+            {!selectedDay?.holiday  && <View style={styles.rowBetweenBorder}>
+              <TouchableOpacity
                 style={styles.actionRow}
                 onPress={() => openRegularizeModal()} // 🔹 open modal
               >
                 <Edit2 size={16} color="#0E79B6" />
                 <Text style={styles.link}> Regularize</Text>
-              </TouchableOpacity>}
+              </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.actionRow}
                 onPress={() => navigation.navigate('Leave', { openModal: true })}
@@ -520,7 +520,7 @@ export const AttendanceScreen: React.FC = () => {
                 <CalendarIcon size={16} color="#0E79B6" />
                 <Text style={styles.link}> Apply Leave</Text>
               </TouchableOpacity>
-            </View>
+            </View>}
             {/* Day Logs */}
             <Text style={styles.sectionSubTitle}>Day Logs</Text>
             {selectedDay?.day_logs?.length > 0 ? (

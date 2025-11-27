@@ -17,6 +17,7 @@ import { RootState } from '@/redux/store';
 import { attendanceService } from '@/services/attendanceService';
 import { encodeData } from '@/utils/cryptoHelpers';
 import Toast from 'react-native-toast-message';
+import { Snackbar } from 'react-native-paper';
 
 interface RegularizeModalProps {
   visible: boolean;
@@ -31,6 +32,10 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
 }) => {
   const userData = useSelector((state: RootState) => state.user.profile);
   const { names } = useSelector((state: RootState) => state.user);
+  const [snackbar, setSnackbar] = useState({
+    visible: false,
+    message: '',
+  });
 
   // 👇 Single state object for form
   const [form, setForm] = useState({
@@ -189,16 +194,16 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         resetAllState();
         onClose();
       } else {
-        Toast.show({
-          type: 'error',
-          text1: res.message || 'Failed to submit request',
-        });
+          setSnackbar({
+            visible: true,
+            message: res.message || 'Failed to submit request',
+          });
       }
     } catch (err: any) {
-      Toast.show({
-        type: 'error',
-        text1: err.message || 'Something went wrong',
-      });
+        setSnackbar({
+          visible: true,
+          message: err.message || 'Something went wrong',
+        });
     } finally {
       setLoading(false);
     }
@@ -248,236 +253,251 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
   }, [form.requestFor]);
 
   return (
-    <AppModal visible={visible} onClose={onClose}>
-      <ScrollView style={{ maxHeight: 600 }} showsVerticalScrollIndicator>
-        <View style={styles.iconGeneralCircle}>
-          <Edit2 size="20" color="#0E79B6" />
-        </View>
+    <>
+      <AppModal visible={visible} onClose={onClose}>
+        
+        <ScrollView style={{ maxHeight: 600 }} showsVerticalScrollIndicator>
+          <View style={styles.iconGeneralCircle}>
+            <Edit2 size="20" color="#0E79B6" />
+          </View>
 
-        <Text style={styles.heading}>Regularize</Text>
-        <Text style={styles.subheading}>
-          Please fill out the details below to regularize your attendance.
-        </Text>
-
-        {/* Attendance Day */}
-        <View style={styles.field}>
-          <Text>
-            Attendance Day <Text style={{ color: 'red' }}>*</Text>
+          <Text style={styles.heading}>Regularize</Text>
+          <Text style={styles.subheading}>
+            Please fill out the details below to regularize your attendance.
           </Text>
-          <TouchableOpacity
-            style={styles.inputBox}
-            onPress={() => {
-              setShowDatePicker(true);
-              updateForm('attendanceDay', form.attendanceDay);
-            }}
-          >
-            <Text>{form.attendanceDay.toLocaleDateString('en-GB')}</Text>
-          </TouchableOpacity>
-          {formErrors.attendanceDay && (
-            <Text style={styles.errorText}>{formErrors.attendanceDay}</Text>
-          )}
-          {showDatePicker && (
-            <DateTimePicker
-              value={form.attendanceDay}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(event, selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) updateForm('attendanceDay', selectedDate);
+
+          {/* Attendance Day */}
+          <View style={styles.field}>
+            <Text>
+              Attendance Day <Text style={{ color: 'red' }}>*</Text>
+            </Text>
+            <TouchableOpacity
+              style={styles.inputBox}
+              onPress={() => {
+                setShowDatePicker(true);
+                updateForm('attendanceDay', form.attendanceDay);
               }}
+            >
+              <Text>{form.attendanceDay.toLocaleDateString('en-GB')}</Text>
+            </TouchableOpacity>
+            {formErrors.attendanceDay && (
+              <Text style={styles.errorText}>{formErrors.attendanceDay}</Text>
+            )}
+            {showDatePicker && (
+              <DateTimePicker
+                value={form.attendanceDay}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) updateForm('attendanceDay', selectedDate);
+                }}
+              />
+            )}
+          </View>
+
+          {/* Request To */}
+          <View style={styles.field}>
+            <Text>
+              Request To <Text style={{ color: 'red' }}>*</Text>
+            </Text>
+            <RNPickerSelect
+              onValueChange={value => updateForm('selectedName', value)}
+              items={renderUserOptions(userData, names)}
+              value={form.selectedName}
+              placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
+              style={pickerSelectStyles}
+              useNativeAndroidPickerStyle={false}
             />
-          )}
-        </View>
-
-        {/* Request To */}
-        <View style={styles.field}>
-          <Text>
-            Request To <Text style={{ color: 'red' }}>*</Text>
-          </Text>
-          <RNPickerSelect
-            onValueChange={value => updateForm('selectedName', value)}
-            items={renderUserOptions(userData, names)}
-            value={form.selectedName}
-            placeholder={{ label: 'Select Reporting Manager/HR', value: '' }}
-            style={pickerSelectStyles}
-            useNativeAndroidPickerStyle={false}
-          />
-          {formErrors.selectedName && (
-            <Text style={styles.errorText}>{formErrors.selectedName}</Text>
-          )}
-        </View>
-
-        {/* Request For */}
-        <View style={styles.field}>
-          <Text>
-            Request For <Text style={{ color: 'red' }}>*</Text>
-          </Text>
-          <RNPickerSelect
-            onValueChange={value => updateForm('requestFor', value)}
-            items={[
-              { label: 'Punch-In', value: 'Punch-In' },
-              { label: 'Punch-Out', value: 'Punch-Out' },
-              { label: 'Both', value: 'Both' },
-            ]}
-            style={pickerSelectStyles}
-            value={form.requestFor}
-            useNativeAndroidPickerStyle={false}
-          />
-          {formErrors.requestFor && (
-            <Text style={styles.errorText}>{formErrors.requestFor}</Text>
-          )}
-        </View>
-
-        {/* Capture Mode */}
-        <View style={styles.field}>
-          <Text>
-            Capture Mode <Text style={{ color: 'red' }}>*</Text>
-          </Text>
-          <RNPickerSelect
-            onValueChange={value => updateForm('captureMode', value)}
-            items={[
-              { label: 'Web', value: 'Web' },
-              { label: 'Remote', value: 'Remote' },
-            ]}
-            style={pickerSelectStyles}
-            value={form.captureMode}
-            useNativeAndroidPickerStyle={false}
-          />
-          {formErrors.captureMode && (
-            <Text style={styles.errorText}>{formErrors.captureMode}</Text>
-          )}
-        </View>
-
-        {/* Punch-In Time */}
-        {(form.requestFor === 'Punch-In' || form.requestFor === 'Both') && (
-          <View style={styles.field}>
-            <Text>
-              Punch-in <Text style={{ color: 'red' }}>*</Text>
-            </Text>
-            <TouchableOpacity
-              style={styles.inputBox}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Text>
-                {form.timeIn.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                })}
-              </Text>
-            </TouchableOpacity>
-            {formErrors.timeIn && (
-              <Text style={styles.errorText}>{formErrors.timeIn}</Text>
-            )}
-            {showTimePicker && (
-              <DateTimePicker
-                value={form.timeIn}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedTime) => {
-                  setShowTimePicker(false);
-                  if (selectedTime) updateForm('timeIn', selectedTime);
-                }}
-              />
+            {formErrors.selectedName && (
+              <Text style={styles.errorText}>{formErrors.selectedName}</Text>
             )}
           </View>
-        )}
 
-        {/* Punch-Out Time */}
-        {(form.requestFor === 'Punch-Out' || form.requestFor === 'Both') && (
+          {/* Request For */}
           <View style={styles.field}>
             <Text>
-              Punch-out <Text style={{ color: 'red' }}>*</Text>
+              Request For <Text style={{ color: 'red' }}>*</Text>
             </Text>
-            <TouchableOpacity
-              style={styles.inputBox}
-              onPress={() => setShowPunchOutPicker(true)}
-            >
-              <Text>
-                {form.timeOut.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                })}
-              </Text>
-            </TouchableOpacity>
-            {formErrors.timeOut && (
-              <Text style={styles.errorText}>{formErrors.timeOut}</Text>
-            )}
-            {showPunchOutPicker && (
-              <DateTimePicker
-                value={form.timeOut}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedTime) => {
-                  setShowPunchOutPicker(false);
-                  if (selectedTime) updateForm('timeOut', selectedTime);
-                }}
-              />
+            <RNPickerSelect
+              onValueChange={value => updateForm('requestFor', value)}
+              items={[
+                { label: 'Punch-In', value: 'Punch-In' },
+                { label: 'Punch-Out', value: 'Punch-Out' },
+                { label: 'Both', value: 'Both' },
+              ]}
+              style={pickerSelectStyles}
+              value={form.requestFor}
+              useNativeAndroidPickerStyle={false}
+            />
+            {formErrors.requestFor && (
+              <Text style={styles.errorText}>{formErrors.requestFor}</Text>
             )}
           </View>
-        )}
 
-        {/* Reason */}
-        <View style={styles.field}>
-          <Text>
-            Reason <Text style={{ color: 'red' }}>*</Text>
-          </Text>
-          <RNPickerSelect
-            onValueChange={value => updateForm('reason', value)}
-            items={reasonList}
-            value={form.reason}
-            style={pickerSelectStyles}
-            placeholder={{ label: 'Select Reason', value: null }}
-            useNativeAndroidPickerStyle={false}
-          />
-          {formErrors.reason && (
-            <Text style={styles.errorText}>{formErrors.reason}</Text>
-          )}
+          {/* Capture Mode */}
+          <View style={styles.field}>
+            <Text>
+              Capture Mode <Text style={{ color: 'red' }}>*</Text>
+            </Text>
+            <RNPickerSelect
+              onValueChange={value => updateForm('captureMode', value)}
+              items={[
+                { label: 'Web', value: 'Web' },
+                { label: 'Remote', value: 'Remote' },
+              ]}
+              style={pickerSelectStyles}
+              value={form.captureMode}
+              useNativeAndroidPickerStyle={false}
+            />
+            {formErrors.captureMode && (
+              <Text style={styles.errorText}>{formErrors.captureMode}</Text>
+            )}
+          </View>
 
-          {form.reason === 'Other' && (
-            <View style={{ marginTop: 12 }}>
+          {/* Punch-In Time */}
+          {(form.requestFor === 'Punch-In' || form.requestFor === 'Both') && (
+            <View style={styles.field}>
               <Text>
-                Other Reason <Text style={{ color: 'red' }}>*</Text>
+                Punch-in <Text style={{ color: 'red' }}>*</Text>
               </Text>
-              <TextInput
-                value={form.otherReason}
-                onChangeText={text => updateForm('otherReason', text)}
-                placeholder="Enter other reason (Max. 50 characters)"
-                maxLength={50}
+              <TouchableOpacity
                 style={styles.inputBox}
-              />
-              {formErrors.otherReason && (
-                <Text style={styles.errorText}>{formErrors.otherReason}</Text>
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Text>
+                  {form.timeIn.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </Text>
+              </TouchableOpacity>
+              {formErrors.timeIn && (
+                <Text style={styles.errorText}>{formErrors.timeIn}</Text>
+              )}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={form.timeIn}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedTime) => {
+                    setShowTimePicker(false);
+                    if (selectedTime) updateForm('timeIn', selectedTime);
+                  }}
+                />
               )}
             </View>
           )}
-        </View>
 
-        {/* Description */}
-        <View style={styles.field}>
-          <Text>Description</Text>
-          <TextInput
-            placeholder="Enter Description"
-            value={form.description}
-            onChangeText={text => updateForm('description', text)}
-            multiline
-            style={styles.textArea}
-          />
-        </View>
+          {/* Punch-Out Time */}
+          {(form.requestFor === 'Punch-Out' || form.requestFor === 'Both') && (
+            <View style={styles.field}>
+              <Text>
+                Punch-out <Text style={{ color: 'red' }}>*</Text>
+              </Text>
+              <TouchableOpacity
+                style={styles.inputBox}
+                onPress={() => setShowPunchOutPicker(true)}
+              >
+                <Text>
+                  {form.timeOut.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </Text>
+              </TouchableOpacity>
+              {formErrors.timeOut && (
+                <Text style={styles.errorText}>{formErrors.timeOut}</Text>
+              )}
+              {showPunchOutPicker && (
+                <DateTimePicker
+                  value={form.timeOut}
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedTime) => {
+                    setShowPunchOutPicker(false);
+                    if (selectedTime) updateForm('timeOut', selectedTime);
+                  }}
+                />
+              )}
+            </View>
+          )}
 
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={styles.submitBtn}
-          onPress={handleSubmit}
-          disabled={loading}
+          {/* Reason */}
+          <View style={styles.field}>
+            <Text>
+              Reason <Text style={{ color: 'red' }}>*</Text>
+            </Text>
+            <RNPickerSelect
+              onValueChange={value => updateForm('reason', value)}
+              items={reasonList}
+              value={form.reason}
+              style={pickerSelectStyles}
+              placeholder={{ label: 'Select Reason', value: null }}
+              useNativeAndroidPickerStyle={false}
+            />
+            {formErrors.reason && (
+              <Text style={styles.errorText}>{formErrors.reason}</Text>
+            )}
+
+            {form.reason === 'Other' && (
+              <View style={{ marginTop: 12 }}>
+                <Text>
+                  Other Reason <Text style={{ color: 'red' }}>*</Text>
+                </Text>
+                <TextInput
+                  value={form.otherReason}
+                  onChangeText={text => updateForm('otherReason', text)}
+                  placeholder="Enter other reason (Max. 50 characters)"
+                  maxLength={50}
+                  style={styles.inputBox}
+                />
+                {formErrors.otherReason && (
+                  <Text style={styles.errorText}>{formErrors.otherReason}</Text>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Description */}
+          <View style={styles.field}>
+            <Text>Description</Text>
+            <TextInput
+              placeholder="Enter Description"
+              value={form.description}
+              onChangeText={text => updateForm('description', text)}
+              multiline
+              style={styles.textArea}
+            />
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={styles.submitBtn}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Text style={{ color: '#fff', fontWeight: '600' }}>
+              {loading ? 'Submitting...' : 'Submit'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+        <Snackbar
+          visible={snackbar.visible}
+          onDismiss={() => setSnackbar({ ...snackbar, visible: false })}
+          duration={3000}
+          style={{
+            backgroundColor: '#E53935',
+            borderRadius: 8,
+            top: -100
+          }}
         >
-          <Text style={{ color: '#fff', fontWeight: '600' }}>
-            {loading ? 'Submitting...' : 'Submit'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </AppModal>
+          {snackbar.message}
+        </Snackbar>
+      </AppModal>
+    </>
   );
 };
 

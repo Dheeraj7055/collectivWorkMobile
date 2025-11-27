@@ -23,6 +23,7 @@ export const API_ROUTES = {
   REMOVE_PIN_USER: '/api/announcement/remove/pin/user',
   PIN_USER_LIST: '/api/announcement/pin/user',
   REPORT_ANNOUNCEMENT: '/api/announcement/report',
+  AI_CONTENT_GENERATOR: '/api/application/generate/content',
 
 
   //other
@@ -59,4 +60,10 @@ export const API_ROUTES = {
   REMOVE_COVER_IMAGE: '/api/users/cover/image/remove',
   UPLOAD_PROFILE_IMAGE: '/api/users/image/upload',
   REMOVE_PROFILE_IMAGE: '/api/users/image/remove',
+
+  //notification
+  USER_NOTIFICATION_LIST: '/api/users/notification/list',
+  USER_NOTIFICATION_COUNT: '/api/users/notification/count',
+  USER_NOTIFICATION_READ: '/api/users/notification/read',
+  USER_NOTIFICATION_VIEW: '/api/users/notification/view',
 };

@@ -5,42 +5,6 @@ import { LoginRequest, LoginResponse } from '../types/user';
 
 export const authService = {
   // 🔑 Login
-  // login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-  //   const encodedPayload = encodeData(credentials);
-  //   const response = await apiClient.post<any>('/api/users/login', {
-  //     payload: encodedPayload,
-  //   });
-
-  //   const { data, mfa_enabled } = response;
-
-  //   // ✅ MFA Required: Don't store token yet
-  //   if (mfa_enabled) {
-  //     const email = credentials.email;
-  //     await AsyncStorage.setItem('mfa_pending', 'true');
-  //     await AsyncStorage.setItem('mfa_email', email);
-
-  //     return { mfa_enabled: true, email }; // ✅ always include email here
-  //   }
-
-  //   // ✅ Normal login
-  //   const token = data?.token || '';
-  //   const refreshToken = data?.refreshToken || '';
-
-  //   if (token) {
-  //     await AsyncStorage.setItem('token', token);
-  //     await AsyncStorage.setItem('refreshToken', refreshToken || '');
-  //     await AsyncStorage.multiRemove(['mfa_pending', 'mfa_email']);
-  //   }
-
-  //   return {
-  //     token,
-  //     refreshToken,
-  //     user: data?.user,
-  //     mfa_enabled: false,
-  //     email: credentials.email,
-  //   };
-  // },
-
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     try {
       const encodedPayload = encodeData(credentials);
@@ -50,7 +14,7 @@ export const authService = {
 
       const { data, mfa_enabled } = response;
 
-      // ✅ MFA Required: Don't store token yet
+      // MFA Required: Don't store token yet
       if (mfa_enabled) {
         const email = credentials.email;
         await AsyncStorage.setItem('mfa_pending', 'true');
@@ -59,7 +23,7 @@ export const authService = {
         return { mfa_enabled: true, email } as LoginResponse;
       }
 
-      // ✅ Normal login
+      // Normal login
       const token = data?.token || '';
       const refreshToken = data?.refreshToken || '';
 
@@ -77,9 +41,9 @@ export const authService = {
         email: credentials.email,
       } as LoginResponse;
     } catch (err: any) {
-      // ⬇️ NEW PART ONLY: extract backend message for Toast
+      // NEW PART ONLY: extract backend message for Toast
       const backendMessage =
-        err?.response?.data?.message || // e.g. "Invalid credentials"
+        err?.response?.data?.message || "Invalid credentials"
         err?.response?.data?.error || // fallback key
         err?.message || // axios default text
         'Login failed';
@@ -96,7 +60,7 @@ export const authService = {
     // Encode payload
     const encodedPayload = encodeData(params);
 
-    // ✅ Correct endpoint as per your note
+    // Correct endpoint as per your note
     const response = await apiClient.post<any>('/api/users/verify/otp', {
       payload: encodedPayload,
     });
@@ -106,7 +70,7 @@ export const authService = {
     const refreshToken = data?.refreshToken || '';
     const user = data?.user || null;
 
-    // ✅ Save token when successful
+    // Save token when successful
     if (token) {
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('refreshToken', refreshToken || '');
@@ -118,7 +82,7 @@ export const authService = {
       refreshToken,
       user,
       mfa_enabled: false,
-      email: params.email, // ✅ include for state consistency
+      email: params.email, // include for state consistency
     };
   },
 

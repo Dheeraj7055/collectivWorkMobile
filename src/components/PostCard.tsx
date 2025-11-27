@@ -55,11 +55,14 @@ import { PostReportMenuItem } from './Announcement/PostReportMenuItem';
 import { PostReportModal } from './Announcement/PostReportModal';
 import EmojiPicker from 'rn-emoji-keyboard';
 import { EditPostModal } from './Announcement/EditPostModal';
+import { DescriptionYoutube } from './DescriptionYoutube';
+
 
 const { width, height } = Dimensions.get('window');
 
 interface PostProps {
   announcement: Announcement;
+  detailMode?: boolean;
 }
 
 export const PostCard: React.FC<PostProps> = ({ announcement }) => {
@@ -120,6 +123,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   const [editPollOptions, setEditPollOptions] = useState<string[]>([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [commentLoader, setCommentLoader] = useState(false);
 
 
   // validation errors
@@ -153,6 +157,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
   // Send Comment
   const handleSendComment = async () => {
     if (!newComment.trim() || !userData?.id) return;
+    setCommentLoader(true);
 
     try {
       const payload = {
@@ -185,12 +190,15 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
 
         setPostComments(prev => [...prev, newEntry]);
         setNewComment('');
+        setCommentLoader(false);
 
         dispatch(fetchAnnouncements({ postName: 'all', searchParam: '' }));
       } else {
         console.warn(response?.data?.message || 'Failed to comment on post.');
+        setCommentLoader(false);
       }
     } catch (err: any) {
+      setCommentLoader(false);
       console.error(
         'Error posting comment:',
         err?.response?.data?.message || err.message,
@@ -951,6 +959,11 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
     }
   };
 
+  const openCommentModal = (data: Announcement) => {
+    setCommentModalVisible(true);
+    setPostComments(announcement?.Comments ?? []);
+  }
+
   useEffect(() => {
     dispatch(fetchUserData());
   }, [dispatch]);
@@ -1212,7 +1225,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
             styles.sendButton,
             !newComment.trim() && styles.disabledSendButton,
           ]}
-          disabled={!newComment.trim()}
+          disabled={!newComment.trim() || commentLoader}
           onPress={handleSendComment}
         >
           <Text style={styles.confirmText}>Comment</Text>
@@ -1805,7 +1818,10 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
         ) : (
           <>
             <Text style={styles.title}>{title}</Text>
-            <Text style={styles.content}>{content}</Text>
+            <DescriptionYoutube
+              id={String(announcement?.id)}
+              description={announcement?.description}
+            />
           </>
         )}
 
@@ -2088,7 +2104,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
           </View>
 
           <TouchableOpacity
-            onPress={() => setCommentModalVisible(true)}
+            onPress={() => openCommentModal(announcement)}
             style={styles.actionButton}
           >
             <View
