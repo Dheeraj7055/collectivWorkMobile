@@ -317,29 +317,6 @@ export const LeaveScreen: React.FC = () => {
     }
   };
 
-  const renderFakeInput = useCallback(
-    (
-      label: string,
-      value: Date | null,
-      onPress: () => void,
-      errorField?: string,
-    ) => (
-      <TouchableOpacity
-        style={styles.input}
-        onPress={() => {
-          if (errorField) clearError(errorField);
-          onPress();
-        }}
-      >
-        <Text style={{ color: value ? '#000' : '#888' }}>
-          {value ? moment(value).format("DD/MM/YYYY") : label}
-        </Text>
-      </TouchableOpacity>
-    ),
-    [clearError]  
-  );
-
-
   const handleDay = (value: string | null) => {
     if (!value) return;
     setDayType(value);
@@ -655,6 +632,28 @@ export const LeaveScreen: React.FC = () => {
   const clearError = (field: string) => {
     setFormErrors(prev => ({ ...prev, [field]: '' }));
   };
+
+   const renderFakeInput = useCallback(
+    (
+      label: string,
+      value: Date | null,
+      onPress: () => void,
+      errorField?: string,
+    ) => (
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() => {
+          if (errorField) clearError(errorField);
+          onPress();
+        }}
+      >
+        <Text style={{ color: value ? '#000' : '#888' }}>
+          {value ? moment(value).format("DD/MM/YYYY") : label}
+        </Text>
+      </TouchableOpacity>
+    ),
+    [clearError]  
+  );
 
   useEffect(() => {
     const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
@@ -1055,7 +1054,7 @@ export const LeaveScreen: React.FC = () => {
                                   style={styles.leaveOption}
                                   onPress={() => {
                                     setIsStartHalfOpen(false);
-                                    setStartHalf(item.value);
+                                    setStartHalf(item.value as HalfDayType);
                                     clearError('startHalf');
                                   }}
                                 >
@@ -1170,7 +1169,7 @@ export const LeaveScreen: React.FC = () => {
                                   style={styles.leaveOption}
                                   onPress={() => {
                                     setIsEndHalfOpen(false);
-                                    setEndHalf(item.value);
+                                    setEndHalf(item.value as HalfDayType);
                                     clearError('endHalf');
                                   }}
                                 >
