@@ -1437,7 +1437,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                 </Text>
               </TouchableOpacity>
 
-              <Text style={{ marginLeft: 4, fontSize: 12, color: '#666' }}>
+              <Text className="flex-1 items-center justify-center bg-blue-500 border" style={{ marginLeft: 4, fontSize: 12, color: '#666' }}>
                 reposted this
               </Text>
             </View>
@@ -1541,99 +1541,89 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
           </View>
 
           {/* Menu */}
-          <View style={{ position: 'relative' }}>
+          <View style={{ position: "relative" }}>
             {/* ⋮ button */}
             <TouchableOpacity
               onPress={toggleMenu}
-              style={{ padding: 4, alignSelf: 'flex-end' }}
+              style={{ padding: 4, alignSelf: "flex-end" }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={{ fontSize: 20 }}>⋮</Text>
             </TouchableOpacity>
 
-            {/* overlay tap area to close menu when clicking outside */}
+            {/* 🔥 FULL SCREEN OVERLAY – tap outside to close */}
             {menuVisible && (
               <Pressable
                 onPress={closeMenu}
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  // transparent overlay to capture outside taps
-                  backgroundColor: 'transparent',
+                  position: "absolute",
+                  top: -2000, // ensures full coverage even inside nested View
+                  left: -2000,
+                  right: -2000,
+                  bottom: -2000,
+                  backgroundColor: "transparent",
+                  zIndex: 10,
                 }}
               />
             )}
 
-            {/* the dropdown menu card */}
+            {/* 🔥 THE DROPDOWN MENU */}
             {menuVisible && (
               <View
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   right: 8,
-                  top: 28, // a bit below the ⋮ button
+                  top: 28,
                   width: 180,
-                  backgroundColor: '#fff',
+                  backgroundColor: "#fff",
                   borderRadius: 8,
                   paddingVertical: 4,
-                  shadowColor: '#000',
+                  zIndex: 900,
+                  shadowColor: "#000",
                   shadowOpacity: 0.15,
                   shadowRadius: 8,
                   shadowOffset: { width: 0, height: 4 },
                   elevation: 6,
-                  zIndex: 1000,
                 }}
               >
-                {/* 🔹 Bookmark */}
+                {/* --- BOOKMARK --- */}
                 <TouchableOpacity
                   onPress={() => {
                     closeMenu();
                     handleBookmark(announcement);
                   }}
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
+                    flexDirection: "row",
+                    alignItems: "center",
                     height: 44,
                     paddingVertical: 4,
                     paddingHorizontal: 12,
                   }}
                 >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                    }}
-                  >
-                    {announcement?.bookmarked_by_user_ids?.includes(
-                      userData?.id,
-                    ) ? (
-                      <Bookmark size={18} color="#007AFF" />
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    {announcement?.bookmarked_by_user_ids?.includes(userData?.id) ? (
+                      <BookmarkCheck size={18} color="#007AFF" />
                     ) : (
-                      <BookmarkCheck size={18} color="#333" />
+                      <Bookmark size={18} color="#333" />
                     )}
                     <Text
                       style={{
                         fontSize: 15,
                         color: announcement?.bookmarked_by_user_ids?.includes(
-                          userData?.id,
+                          userData?.id
                         )
-                          ? '#007AFF'
-                          : '#333',
+                          ? "#007AFF"
+                          : "#333",
                       }}
                     >
-                      {announcement?.bookmarked_by_user_ids?.includes(
-                        userData?.id,
-                      )
-                        ? 'Bookmarked'
-                        : 'Bookmark'}
+                      {announcement?.bookmarked_by_user_ids?.includes(userData?.id)
+                        ? "Bookmarked"
+                        : "Bookmark"}
                     </Text>
                   </View>
                 </TouchableOpacity>
 
-                {/* 🔹 Edit */}
+                {/* --- EDIT --- */}
                 {canDelete && (
                   <TouchableOpacity
                     onPress={() => {
@@ -1641,29 +1631,21 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                       handleEditPress(announcement);
                     }}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
+                      flexDirection: "row",
+                      alignItems: "center",
                       height: 44,
                       paddingVertical: 4,
                       paddingHorizontal: 12,
                     }}
                   >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
-                    >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <Pencil size={18} color="#333" />
-                      <Text style={{ fontSize: 15, color: '#333' }}>
-                        Edit Post
-                      </Text>
+                      <Text style={{ fontSize: 15, color: "#333" }}>Edit Post</Text>
                     </View>
                   </TouchableOpacity>
                 )}
 
-                {/* 🔹 Delete */}
+                {/* --- DELETE --- */}
                 {canDelete && (
                   <TouchableOpacity
                     onPress={() => {
@@ -1671,31 +1653,25 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                       setShowDeleteModal(true);
                     }}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
+                      flexDirection: "row",
+                      alignItems: "center",
                       height: 44,
                       paddingVertical: 4,
                       paddingHorizontal: 12,
                     }}
                   >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
-                    >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                       <Trash2 size={18} color="#E53935" />
-                      <Text style={{ fontSize: 15, color: '#E53935' }}>
+                      <Text style={{ fontSize: 15, color: "#E53935" }}>
                         {announcement?.reposted_by === userData?.id
-                          ? 'Delete Repost'
-                          : 'Delete Post'}
+                          ? "Delete Repost"
+                          : "Delete Post"}
                       </Text>
                     </View>
                   </TouchableOpacity>
                 )}
 
-                {/* 🔹 Pin / Unpin */}
+                {/* --- PIN --- */}
                 <PostPinMenuItem
                   announcement={announcement}
                   userData={userData}
@@ -1703,7 +1679,7 @@ export const PostCard: React.FC<PostProps> = ({ announcement }) => {
                   closeMenu={closeMenu}
                 />
 
-                {/* 🔹 Report */}
+                {/* --- REPORT --- */}
                 <PostReportMenuItem
                   announcement={announcement}
                   userData={userData}

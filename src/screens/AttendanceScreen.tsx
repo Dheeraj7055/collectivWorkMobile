@@ -658,7 +658,7 @@ export const AttendanceScreen: React.FC = () => {
 
           {/* 🔹 Upcoming Holidays */}
           <View style={styles.holidayCard}>
-            <Text style={styles.sectionTitle}>Upcoming Holidays</Text>
+            <Text style={styles.sectionTitle}>Holidays</Text>
 
             {holidayList && holidayList.length > 0 ? (
               holidayList.map((holiday, index) => {
