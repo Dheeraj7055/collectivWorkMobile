@@ -181,7 +181,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
         request_to: form.selectedName,
         reason: form.reason === 'Other' ? form.otherReason : form.reason,
         description: form.description,
-        status_updated_by: form.requestTo,
+        status_updated_by: form.requestTo || form.selectedName,
         request_for:
           form.requestFor === 'Punch-Out'
             ? 'checkOut'
@@ -189,6 +189,7 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
               ? 'checkIn'
               : 'both',
       });
+
 
       const res = await attendanceService.raiseAttendanceRequest({ payload });
       if (res.success) {
