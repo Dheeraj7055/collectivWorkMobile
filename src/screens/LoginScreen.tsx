@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 120,
-    height: 120,
-    marginBottom: SPACING.LG,
+    height: 100,
+    marginBottom: SPACING.MD,
   },
   form: {
     width: '100%',

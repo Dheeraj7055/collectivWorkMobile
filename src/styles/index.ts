@@ -49,8 +49,8 @@ export const globalStyles = StyleSheet.create({
   heading1: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.MD,
+    color: '#1471a6',
+    marginBottom: SPACING.SM,
   },
   
   heading2: {
