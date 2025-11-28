@@ -626,7 +626,6 @@ export const LeaveScreen: React.FC = () => {
     setEndHalf('');
     setAllowBeyondQuota(false);
     setLeaveRemainingLeaves(0);
-
     setFormErrors({});
   }
 
@@ -679,9 +678,9 @@ export const LeaveScreen: React.FC = () => {
       dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
       setTimeout(() => {
         setLeaveModalVisible(true);
-      },1000)
+      },500)
     }
-  }, [route.params?.openModal, dispatch]);
+  }, [route.params, dispatch]);
 
   const leaveListOptions: string[] = useMemo(() => {
     if (!userLeaveQuotaList) return [];
