@@ -215,6 +215,7 @@ export const LeaveScreen: React.FC = () => {
   };
 
   const handleLeaveChange = (value: string, type?: string) => {
+    if(!value) return
     let removedLeave: string[] = [];
 
     // Update selected leave type
