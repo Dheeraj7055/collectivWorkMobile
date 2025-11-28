@@ -7,6 +7,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Modal,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import RNPickerSelect from 'react-native-picker-select';
@@ -293,17 +294,64 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
             {formErrors.attendanceDay && (
               <Text style={styles.errorText}>{formErrors.attendanceDay}</Text>
             )}
-            {showDatePicker && (
+            {/* {showDatePicker && (
               <DateTimePicker
                 value={form?.attendanceDay ? new Date(form.attendanceDay) : new Date()}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display={Platform.OS === 'ios' ? '' : 'default'}
                 onChange={(event, selectedDate) => {
                   setShowDatePicker(false);
                   if (selectedDate) updateForm('attendanceDay', selectedDate);
                 }}
               />
-            )}
+            )} */}
+
+            <Modal
+              visible={!!showDatePicker}
+              transparent
+              animationType="fade"
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                activeOpacity={1}
+                onPress={() => setShowDatePicker(false)} // close when tapping outside
+              >
+                <TouchableOpacity
+                  activeOpacity={1}
+                  style={{
+                    width: '90%',
+                    backgroundColor: '#fff',
+                    borderRadius: 16,
+                    paddingVertical: 20,
+                    alignItems: 'center',
+                  }}
+                >
+                  <DateTimePicker
+                    value={form?.attendanceDay ? new Date(form.attendanceDay) : new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'} 
+                    onChange={(event, selectedDate) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) updateForm('attendanceDay', selectedDate);
+                    }}
+                    themeVariant="light"
+                  />
+
+                  <TouchableOpacity
+                    style={{ paddingVertical: 12 }}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </Modal>
+
           </View>
 
           {/* Request To */}

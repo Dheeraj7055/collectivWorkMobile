@@ -9,6 +9,7 @@ import {
   TextInput,
   Linking,
   Modal,
+  Pressable,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/redux/store';
@@ -65,7 +66,7 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
   const openEditModal = (leave: any) => {
     setEditingLeaveData(leave);
     dispatch(fetchUserNamesList({}));
-    
+
     const matched = userLeaveQuotaList?.leave_config?.find(
       (item: any) => item.leave_type === leave.leave_type,
     );
@@ -74,7 +75,7 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
     setEditModalVisible(true);
   };
 
-  
+
 
   const getActionUserHeading = (status?: string) => {
     if (!status) return 'Requested To';
@@ -301,7 +302,7 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
           </View>
 
           <View style={styles.center}>
-            <Text  style={styles.topTitle}>{leaveUser?.subject?.length > 20 ? leaveUser?.subject?.slice(0,20) + '...' : leaveUser?.subject}</Text>
+            <Text style={styles.topTitle}>{leaveUser?.subject?.length > 20 ? leaveUser?.subject?.slice(0, 20) + '...' : leaveUser?.subject}</Text>
           </View>
 
           <View style={styles.side}>
@@ -392,8 +393,8 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
                     leaveUser.status === 'Approved'
                       ? 'green'
                       : leaveUser.status === 'Pending'
-                      ? 'orange'
-                      : 'red',
+                        ? 'orange'
+                        : 'red',
                 },
               ]}
             >
@@ -473,113 +474,121 @@ export const LeaveRequestDetailScreen = ({ route, navigation }: any) => {
           )}
 
           {/* Comments List */}
-          {isCommentsLoading ? (
-            <ActivityIndicator />
-          ) : leaveComments.length === 0 ? (
-            <Text style={{ color: '#666', fontSize: 13, marginTop: 8 }}>
-              No comments yet
-            </Text>
-          ) : (
-            leaveComments.map(c => (
-              <View key={c.id} style={styles.commentRow}>
-                {c?.leaveCommentCreatedBy?.image_url ? (
-                  <Image
-                    source={{ uri: c.leaveCommentCreatedBy.image_url }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.avatar,
-                      {
-                        backgroundColor:
-                          c?.leaveCommentCreatedBy?.profile_color || '#999',
-                      },
-                    ]}
-                  >
-                    <Text style={styles.initials}>
-                      {getInitials(c?.leaveCommentCreatedBy)}
-                    </Text>
-                  </View>
-                )}
-
-                {/* Comment Content */}
-                <View style={{ flex: 1 }}>
-                  <View style={styles.commentHeader}>
-                    <Text style={styles.commentUser}>
-                      {c.leaveCommentCreatedBy.first_name}{' '}
-                      {c.leaveCommentCreatedBy.last_name}
-                    </Text>
-                    <TouchableOpacity onPress={() => setMenuFor(c.id)}>
-                      <Text style={{ fontSize: 18 }}>⋮</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {editingComment === c.id ? (
-                    <>
-                      <TextInput
-                        style={styles.commentInputExpanded}
-                        value={commentTexts[c.id] || ''}
-                        onChangeText={text =>
-                          setCommentTexts(prev => ({ ...prev, [c.id]: text }))
-                        }
-                        multiline
-                        autoFocus
-                      />
-                      <View style={styles.actionRow}>
-                        <TouchableOpacity
-                          style={styles.cancelBtn}
-                          onPress={() => setEditingComment(null)}
-                        >
-                          <Text style={{ color: '#000' }}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.saveBtn}
-                          onPress={() => saveComment(c.id)}
-                          disabled={!commentTexts[c.id]?.trim()}
-                        >
-                          <Text style={{ color: '#fff' }}>Update</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </>
+          <Pressable
+            style={{ flex: 1 }}
+            onPress={() => {
+              // Close menu when clicking outside
+              setMenuFor(null);
+            }}
+          >
+            {isCommentsLoading ? (
+              <ActivityIndicator />
+            ) : leaveComments.length === 0 ? (
+              <Text style={{ color: '#666', fontSize: 13, marginTop: 8 }}>
+                No comments yet
+              </Text>
+            ) : (
+              leaveComments.map(c => (
+                <View key={c.id} style={styles.commentRow}>
+                  {c?.leaveCommentCreatedBy?.image_url ? (
+                    <Image
+                      source={{ uri: c.leaveCommentCreatedBy.image_url }}
+                      style={styles.avatar}
+                    />
                   ) : (
-                    <>
-                      <Text style={styles.commentText}>{c.comment}</Text>
-                      <Text style={styles.commentTime}>
-                        {moment(c.created_at).format('DD MMM YYYY, hh:mm A')}
+                    <View
+                      style={[
+                        styles.avatar,
+                        {
+                          backgroundColor:
+                            c?.leaveCommentCreatedBy?.profile_color || '#999',
+                        },
+                      ]}
+                    >
+                      <Text style={styles.initials}>
+                        {getInitials(c?.leaveCommentCreatedBy)}
                       </Text>
-                    </>
+                    </View>
                   )}
 
-                  {/* Menu options */}
-                  {menuFor === c.id &&
-                    c?.leaveCommentCreatedBy?.id === userData?.id && (
-                      <View style={styles.menuBox}>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setEditingComment(c.id);
-                            setCommentTexts(prev => ({
-                              ...prev,
-                              [c.id]: c.comment,
-                            }));
-                            setMenuFor(null);
-                          }}
-                        >
-                          <Text style={styles.menuItem}>Edit</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeleteComment(c.id)}
-                        >
-                          <Text style={[styles.menuItem, { color: 'red' }]}>
-                            {deletingId === c.id ? 'Deleting...' : 'Delete'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
+                  {/* Comment Content */}
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.commentHeader}>
+                      <Text style={styles.commentUser}>
+                        {c.leaveCommentCreatedBy.first_name}{' '}
+                        {c.leaveCommentCreatedBy.last_name}
+                      </Text>
+                      <TouchableOpacity onPress={() => setMenuFor(c.id)}>
+                        <Text style={{ fontSize: 18 }}>⋮</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {editingComment === c.id ? (
+                      <>
+                        <TextInput
+                          style={styles.commentInputExpanded}
+                          value={commentTexts[c.id] || ''}
+                          onChangeText={text =>
+                            setCommentTexts(prev => ({ ...prev, [c.id]: text }))
+                          }
+                          multiline
+                          autoFocus
+                        />
+                        <View style={styles.actionRow}>
+                          <TouchableOpacity
+                            style={styles.cancelBtn}
+                            onPress={() => setEditingComment(null)}
+                          >
+                            <Text style={{ color: '#000' }}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.saveBtn}
+                            onPress={() => saveComment(c.id)}
+                            disabled={!commentTexts[c.id]?.trim()}
+                          >
+                            <Text style={{ color: '#fff' }}>Update</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.commentText}>{c.comment}</Text>
+                        <Text style={styles.commentTime}>
+                          {moment(c.created_at).format('DD MMM YYYY, hh:mm A')}
+                        </Text>
+                      </>
                     )}
+
+                    {/* Menu options */}
+                    {menuFor === c.id &&
+                      c?.leaveCommentCreatedBy?.id === userData?.id && (
+                        <View style={styles.menuBox}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setEditingComment(c.id);
+                              setCommentTexts(prev => ({
+                                ...prev,
+                                [c.id]: c.comment,
+                              }));
+                              setMenuFor(null);
+                            }}
+                          >
+                            <Text style={styles.menuItem}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeleteComment(c.id)}
+                          >
+                            <Text style={[styles.menuItem, { color: 'red' }]}>
+                              {deletingId === c.id ? 'Deleting...' : 'Delete'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                  </View>
                 </View>
-              </View>
-            ))
-          )}
+              ))
+            )}
+          </Pressable>
         </View>
       </RefreshableScroll>
     </>

@@ -477,14 +477,63 @@ const EditLeaveModal: React.FC<Props> = ({
             </View>
           )}
 
-          {activePicker && (
+          {/* {activePicker && (
             <DateTimePicker
               value={startDate || new Date()}
               mode="date"
               display="calendar"
               onChange={handleDateChange}
             />
-          )}
+          )} */}
+
+          <Modal
+            visible={!!activePicker}
+            transparent
+            animationType="fade"
+          >
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.4)',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              activeOpacity={1}
+              onPress={() => setActivePicker(null)} // close when tapping outside
+            >
+              <TouchableOpacity
+                activeOpacity={1}
+                style={{
+                  width: '90%',
+                  backgroundColor: '#fff',
+                  borderRadius: 16,
+                  paddingVertical: 20,
+                  alignItems: 'center',
+                }}
+              >
+                <DateTimePicker
+                  value={
+                    activePicker === 'multiEnd'
+                      ? endDate ?? new Date()
+                      : startDate ?? new Date()
+                  }
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'calendar'} // iOS middle calendar
+                  onChange={(event, date) =>
+                    handleDateChange(event, date)
+                  }
+                  themeVariant="light"
+                />
+
+                <TouchableOpacity
+                  style={{ paddingVertical: 12 }}
+                  onPress={() => setActivePicker(null)}
+                >
+                  <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Modal>
 
           {/* Reason */}
           <View style={styles.leaveContainer}>

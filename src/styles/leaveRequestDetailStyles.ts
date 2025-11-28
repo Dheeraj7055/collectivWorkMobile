@@ -101,11 +101,13 @@ topTitle: {
   },
   eyeBtn: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
+    // bottom: 6,
+    // right: 6,
+    left:30,
     backgroundColor: 'rgba(0,0,0,0.6)',
     borderRadius: 16,
     padding: 4,
+    top: 30
   },
 
   pdfBox: {

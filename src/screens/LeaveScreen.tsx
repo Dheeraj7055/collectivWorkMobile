@@ -215,7 +215,7 @@ export const LeaveScreen: React.FC = () => {
   };
 
   const handleLeaveChange = (value: string, type?: string) => {
-    if(!value) return
+    if (!value) return
     let removedLeave: string[] = [];
 
     // Update selected leave type
@@ -471,14 +471,19 @@ export const LeaveScreen: React.FC = () => {
   const handleDateChange = (
     event: DateTimePickerEvent,
     date: Date | undefined,
-    type: 'single' | 'multiStart' | 'multiEnd' | 'halfShort',
+    type: 'single' | 'multiStart' | 'multiEnd' | 'halfShort' | null,
   ) => {
     if (event.type === 'dismissed') {
       setActivePicker(null);
       return;
     }
 
+    // clear active picker in any case
     setActivePicker(null);
+
+    // if type is null (shouldn't happen while picker is visible), ignore
+    if (type === null) return;
+
     if (!date) return;
 
     if (type === 'single' || type === 'halfShort') {
@@ -633,7 +638,7 @@ export const LeaveScreen: React.FC = () => {
     setFormErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-   const renderFakeInput = useCallback(
+  const renderFakeInput = useCallback(
     (
       label: string,
       value: Date | null,
@@ -648,11 +653,11 @@ export const LeaveScreen: React.FC = () => {
         }}
       >
         <Text style={{ color: value ? '#000' : '#888' }}>
-          {value ? moment(value).format("DD/MM/YYYY") : label}
+          {value ? moment(value).format("DD/MMM/YYYY") : label}
         </Text>
       </TouchableOpacity>
     ),
-    [clearError]  
+    [clearError]
   );
 
   useEffect(() => {
@@ -678,7 +683,7 @@ export const LeaveScreen: React.FC = () => {
       dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
       setTimeout(() => {
         setLeaveModalVisible(true);
-      },500)
+      }, 500)
     }
   }, [route.params, dispatch]);
 
@@ -1239,6 +1244,68 @@ export const LeaveScreen: React.FC = () => {
                 </View>
               )}
             </>
+            {/* {activePicker && (
+                <DateTimePicker
+                  value={
+                    activePicker === 'multiEnd'
+                      ? endDate ?? new Date()
+                      : startDate ?? new Date()
+                  }
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'default' : 'calendar'}
+                  onChange={(event, date) =>
+                    handleDateChange(event, date, activePicker)
+                  }
+                />
+              )} */}
+            <Modal
+              visible={!!activePicker}
+              transparent
+              animationType="fade"
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                activeOpacity={1}
+                onPress={() => setActivePicker(null)} // close when tapping outside
+              >
+                <TouchableOpacity
+                  activeOpacity={1}
+                  style={{
+                    width: '90%',
+                    backgroundColor: '#fff',
+                    borderRadius: 16,
+                    paddingVertical: 20,
+                    alignItems: 'center',
+                  }}
+                >
+                  <DateTimePicker
+                    value={
+                      activePicker === 'multiEnd'
+                        ? endDate ?? new Date()
+                        : startDate ?? new Date()
+                    }
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'} // ❤️ iOS middle calendar
+                    onChange={(event, date) =>
+                      handleDateChange(event, date, activePicker)
+                    }
+                    themeVariant="light"
+                  />
+
+                  <TouchableOpacity
+                    style={{ paddingVertical: 12 }}
+                    onPress={() => setActivePicker(null)}
+                  >
+                    <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </Modal>
 
             {dayType !== '' && (
               <View style={{ marginTop: 12 }}>
@@ -1595,21 +1662,6 @@ export const LeaveScreen: React.FC = () => {
                 <Text style={styles.errorText}>
                   ⚠️ Attachment is mandatory.
                 </Text>
-              )}
-
-              {activePicker && (
-                <DateTimePicker
-                  value={
-                    activePicker === 'multiEnd'
-                      ? endDate ?? new Date()
-                      : startDate ?? new Date()
-                  }
-                  mode="date"
-                  display="calendar"
-                  onChange={(event, date) =>
-                    handleDateChange(event, date, activePicker)
-                  }
-                />
               )}
 
               {/* Preview Modal */}
