@@ -673,8 +673,13 @@ export const LeaveScreen: React.FC = () => {
 
   useEffect(() => {
     if (route.params?.openModal) {
-      setLeaveModalVisible(true);
       dispatch(fetchUserNamesList({}));
+      const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
+      dispatch(fetchLeaves(payload) as any);
+      dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
+      setTimeout(() => {
+        setLeaveModalVisible(true);
+      },1000)
     }
   }, [route.params?.openModal, dispatch]);
 
