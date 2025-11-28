@@ -1290,19 +1290,19 @@ export const LeaveScreen: React.FC = () => {
                         : startDate ?? new Date()
                     }
                     mode="date"
-                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'} // ❤️ iOS middle calendar
+                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'} 
                     onChange={(event, date) =>
                       handleDateChange(event, date, activePicker)
                     }
                     themeVariant="light"
                   />
 
-                  <TouchableOpacity
+                  {Platform.OS === 'ios' && <TouchableOpacity
                     style={{ paddingVertical: 12 }}
                     onPress={() => setActivePicker(null)}
                   >
                     <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity>}
                 </TouchableOpacity>
               </TouchableOpacity>
             </Modal>

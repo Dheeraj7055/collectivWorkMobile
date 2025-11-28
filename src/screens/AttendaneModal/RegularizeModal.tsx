@@ -342,12 +342,12 @@ const RegularizeModal: React.FC<RegularizeModalProps> = ({
                     themeVariant="light"
                   />
 
-                  <TouchableOpacity
+                  {Platform.OS === 'ios' && <TouchableOpacity
                     style={{ paddingVertical: 12 }}
                     onPress={() => setShowDatePicker(false)}
                   >
                     <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity>}
                 </TouchableOpacity>
               </TouchableOpacity>
             </Modal>

@@ -46,11 +46,12 @@ const AudienceDropdown: React.FC<AudienceDropdownProps> = ({
           flexDirection: 'row',
           alignItems: 'center',
           paddingVertical: 10,
+          paddingHorizontal: 15
         }}
         hitSlop={8}
       >
-        <CheckBox value={selectAll} onValueChange={onToggle} />
-        <Text style={{ marginLeft: 8 }}>All Users</Text>
+        <CheckBox value={selectAll} onValueChange={onToggle} style={{ height: 25}}/>
+        <Text style={{ marginLeft: 4 }}>All Users</Text>
       </Pressable>
     );
   };
@@ -68,11 +69,12 @@ const AudienceDropdown: React.FC<AudienceDropdownProps> = ({
           flexDirection: 'row',
           alignItems: 'center',
           paddingVertical: 10,
+           paddingHorizontal: 15
         }}
         hitSlop={8}
       >
-        <CheckBox value={checked} onValueChange={onToggle} />
-        <Text style={{ marginLeft: 8 }}>{label}</Text>
+        <CheckBox value={checked} onValueChange={onToggle} style={{ height: 25}}/>
+        <Text style={{ marginLeft: 4 }}>{label}</Text>
       </Pressable>
     );
   };
@@ -83,7 +85,7 @@ const AudienceDropdown: React.FC<AudienceDropdownProps> = ({
         height: 50,
         borderWidth: 1,
         borderRadius: 8,
-        paddingHorizontal: 10,
+        paddingHorizontal: 15,
         borderColor: '#ccc',
       }}
       data={audienceOptions}

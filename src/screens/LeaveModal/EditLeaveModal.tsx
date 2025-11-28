@@ -525,12 +525,12 @@ const EditLeaveModal: React.FC<Props> = ({
                   themeVariant="light"
                 />
 
-                <TouchableOpacity
+               {Platform.OS === 'ios' && <TouchableOpacity
                   style={{ paddingVertical: 12 }}
                   onPress={() => setActivePicker(null)}
                 >
                   <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
-                </TouchableOpacity>
+                </TouchableOpacity>}
               </TouchableOpacity>
             </TouchableOpacity>
           </Modal>
