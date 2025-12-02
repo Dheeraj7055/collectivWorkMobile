@@ -688,7 +688,7 @@ const EditLeaveModal: React.FC<Props> = ({
                           : styles.leavePlaceholderText
                       }
                     >
-                      {clubing || 'Select Club Leave Type'}
+                      {clubing != '' ? clubing : 'Select Club Leave Type'}
                     </Text>
 
                     <Text style={styles.leaveArrow}>▾</Text>

@@ -461,6 +461,7 @@ export const pickerSelectStyles = StyleSheet.create({
     borderRadius: 6,
     color: '#000',
     paddingRight: 30,
+    flexWrap: 'wrap'
   },
   placeholder: {
     color: '#888',

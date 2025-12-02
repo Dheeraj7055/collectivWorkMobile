@@ -73,7 +73,7 @@ export const leaveService = {
 
   // ✅ Update Leave
   updateLeave: async (formData: FormData) => {
-    return await apiClient.post(API_ROUTES.UPDATE_LEAVE, formData, {
+    return await apiClient.put(API_ROUTES.UPDATE_LEAVE, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },

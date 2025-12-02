@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -88,6 +88,7 @@ export const LeaveScreen: React.FC = () => {
   const [activePicker, setActivePicker] = useState<
     null | 'single' | 'multiStart' | 'multiEnd' | 'halfShort'
   >(null);
+  const flatListRef = useRef<FlatList>(null);
 
   // Common form validation flag
   const [showErrors, setShowErrors] = useState<boolean>(false);
@@ -155,6 +156,7 @@ export const LeaveScreen: React.FC = () => {
   const [isStartHalfOpen, setIsStartHalfOpen] = useState(false);
   const [isNameOpen, setIsNameOpen] = useState(false);
   const [isReasonOpen, setIsReasonOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('')
 
   // Leave Duration Config
   const [allowedShortHalfday, setAllowedShortHalfday] = useState<{
@@ -718,6 +720,22 @@ export const LeaveScreen: React.FC = () => {
     const payload = { current: 1, pageSize: 500, request_type: 'Admin' };
     await dispatch(fetchLeaves(payload) as any);
     await dispatch(fetchUserLeaveQuotaList({ user_id: userData.user_id }));
+  };
+
+  // for search functionality
+  const handleSearch = (text: string) => {
+    setSearchValue(text);
+
+    if (!text.trim()) return;
+
+    const index = leaveRequests.findIndex(item =>
+      item.subject?.toLowerCase().includes(text.toLowerCase()) ||
+      item.leave_type?.toLowerCase().includes(text.toLowerCase())
+    );
+
+    if (index >= 0 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index, animated: true });
+    }
   };
 
 
@@ -1290,7 +1308,7 @@ export const LeaveScreen: React.FC = () => {
                         : startDate ?? new Date()
                     }
                     mode="date"
-                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'} 
+                    display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
                     onChange={(event, date) =>
                       handleDateChange(event, date, activePicker)
                     }
@@ -1721,11 +1739,11 @@ export const LeaveScreen: React.FC = () => {
               placeholder="Search"
               style={styles.searchInput}
               placeholderTextColor="#888"
-            // value={searchValue}
-            // onChangeText={text => {
-            //   setSearchValue(text);
-            //   handleSearch(text);
-            // }}
+            value={searchValue}
+            onChangeText={text => {
+              setSearchValue(text);
+              handleSearch(text);
+            }}
             />
           </View>
 
@@ -1757,6 +1775,7 @@ export const LeaveScreen: React.FC = () => {
                 ))}
             </View>
           }
+          listRef={flatListRef}  
           data={leaveRequests}
           keyExtractor={item => String(item.id)}
           renderItem={({ item }) => (
