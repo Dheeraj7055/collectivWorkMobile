@@ -88,7 +88,8 @@ export const LeaveScreen: React.FC = () => {
   const [activePicker, setActivePicker] = useState<
     null | 'single' | 'multiStart' | 'multiEnd' | 'halfShort'
   >(null);
-  const flatListRef = useRef<FlatList>(null);
+  // const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<any>>(null!);
 
   // Common form validation flag
   const [showErrors, setShowErrors] = useState<boolean>(false);
